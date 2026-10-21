@@ -116,9 +116,15 @@ class LiveProvider:
             try:
                 # Explicit none overrides ambient tracing that could export private inputs.
                 with tracing_context(enabled=False):
+                    model = self._model()
+                    if cfg.provider == "gemini":
+                        structured = model.with_structured_output(
+                            schema, method="function_calling", include_raw=True
+                        )
+                    else:
+                        structured = model.with_structured_output(schema, include_raw=True)
                     result = (
-                        self._model()
-                        .with_structured_output(schema, include_raw=True)
+                        structured
                         .invoke(
                             [("system", system), ("human", blocks)],
                             config={"run_name": operation, "tags": [self.run_id, PROMPT_VERSION]},
