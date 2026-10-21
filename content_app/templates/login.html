@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign in · Content Agent</title>
+<link rel="stylesheet" href="/static/style.css">
+</head>
+<body class="login-body">
+<main class="login-card">
+<span class="brand-mark">ic</span>
+<p class="eyebrow">IMPACT WORKSPACE</p>
+<h1>Good work starts<br>with clear records.</h1>
+<p>Turn research updates into communications and publish only approved revisions.</p>
+<form method="post" action="/login">
+<label for="token">Reviewer access token</label>
+<input id="token" name="token" type="password" autocomplete="current-password" required>
+<button type="submit">Open workspace →</button>
+</form>
+<p class="muted">{{ 'Local demo · fictional data only' if mode == 'demo' else 'Internal team access' }}. Your token is configured in the local environment file.</p>
+</main>
+</body>
+</html>

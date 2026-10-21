@@ -1,0 +1,90 @@
+{
+  "content": {
+    "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2",
+    "source": "The fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.",
+    "revision": 3,
+    "created_at": "2026-10-21T19:58:57.077944"
+  },
+  "revisions": [
+    {
+      "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:1",
+      "content_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2",
+      "number": 1,
+      "drafts": {
+        "linkedin": "Project update\n\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.\n\n#Research",
+        "newsletter": "Stakeholder briefing\n\nLatest project update:\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.",
+        "website": "Project announcement\n\nOverview\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.\n\nThis announcement summarizes the supplied project update."
+      },
+      "digest": "9a5b79b3fdb803aba8865e05691d603d1da9767640cfe46976aaefd85ed8594d",
+      "channels": [
+        "linkedin",
+        "newsletter",
+        "website"
+      ],
+      "decision": "draft",
+      "decision_reason": null,
+      "approved_by": null,
+      "approved_at": null
+    },
+    {
+      "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2",
+      "content_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2",
+      "number": 2,
+      "drafts": {
+        "linkedin": "Project update\n\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.\n\n#Research",
+        "newsletter": "Stakeholder briefing\n\nLatest project update:\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.",
+        "website": "Project announcement\n\nOverview\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.\n\nThis announcement summarizes the supplied project update.\n\nPrepared for the fictional project workspace."
+      },
+      "digest": "31076b63ad16e30761ca1a16df300d4177a8b82beded1b755543f5d706588e0b",
+      "channels": [
+        "linkedin",
+        "website"
+      ],
+      "decision": "invalidated",
+      "decision_reason": null,
+      "approved_by": null,
+      "approved_at": null
+    },
+    {
+      "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:3",
+      "content_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2",
+      "number": 3,
+      "drafts": {
+        "linkedin": "Project update\n\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.\n\n#Research",
+        "newsletter": "Stakeholder briefing\n\nLatest project update:\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.",
+        "website": "Project announcement\n\nOverview\nThe fictional River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test a revised checklist. The next step is to collect feedback on the checklist. No research results or participant counts have been reported.\n\nThis announcement summarizes the supplied project update.\n\nPrepared for the fictional project workspace."
+      },
+      "digest": "31076b63ad16e30761ca1a16df300d4177a8b82beded1b755543f5d706588e0b",
+      "channels": [
+        "linkedin",
+        "website"
+      ],
+      "decision": "draft",
+      "decision_reason": null,
+      "approved_by": null,
+      "approved_at": null
+    }
+  ],
+  "publications": [
+    {
+      "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:linkedin",
+      "revision_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2",
+      "channel": "linkedin",
+      "status": "published",
+      "attempts": 1,
+      "url": "http://127.0.0.1:8011/posts/930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:linkedin",
+      "published_at": "2026-10-21T19:58:57.292954",
+      "error": null
+    },
+    {
+      "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:website",
+      "revision_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2",
+      "channel": "website",
+      "status": "published",
+      "attempts": 1,
+      "url": "http://127.0.0.1:8011/posts/930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:website",
+      "published_at": "2026-10-21T19:58:57.322274",
+      "error": null
+    }
+  ]
+}

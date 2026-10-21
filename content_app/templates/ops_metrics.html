@@ -1,0 +1,28 @@
+{% if costs %}
+<section class="panel">
+<h2>Cost by provider, operation and run</h2>
+<p class="muted">Known estimates are partial when unknown calls exist. Estimates are not provider invoices.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Group</th>
+<th>ID</th>
+<th>Calls</th>
+<th>Known estimated USD</th>
+<th>Unknown cost calls</th>
+</tr>
+</thead>
+<tbody>
+{% for c in costs %}<tr>
+<td>{{ c.dimension }}</td>
+<td>{{ c.key }}</td>
+<td>{{ c.calls }}</td>
+<td>{{ c.known_estimate_usd }}</td>
+<td>{{ c.unknown_calls }}</td>
+</tr>{% endfor %}
+</tbody>
+</table>
+</div>
+</section>
+{% endif %}

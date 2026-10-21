@@ -1,0 +1,74 @@
+{% extends 'base.html' %}{% block title %}Operations{% endblock %}{% block crumb %}Operations & activity{% endblock %}{% block body %}<div class="page-heading">
+<div>
+<p class="eyebrow">OPERATIONS & ACTIVITY</p>
+<h1>Every step, accounted for.</h1>
+<p>Correlated requests, validation, human actions and integration results. Times are UTC.</p>
+</div>
+<span class="tag">ADMIN VIEW</span>
+</div>{% include 'ops_metrics.html' %}<section class="panel">
+<form class="filters" method="get">
+<label class="grow">Find a run, request, content ID<input name="q" value="{{ q }}" placeholder="Paste the exact ID">
+</label>
+<button>Find activity</button>
+<a href="/operations">Clear</a>
+</form>
+</section>
+<div class="metrics">
+<div class="metric">
+<span>Visible events</span>
+<strong>{{ events|length }}</strong>
+<small>Most recent 200 matching events</small>
+</div>
+<div class="metric">
+<span>Model ledger calls</span>
+<strong>{{ usage|length }}</strong>
+<small>Fixture replay does not call a model</small>
+</div>
+<div class="metric">
+<span>Trace exporters</span>
+<strong>{{ tracing }}</strong>
+<small>Cloud exporters unverified; internal feed remains available</small>
+</div>
+</div>
+<section class="panel">
+<h2>Model usage & estimated cost</h2>
+<p>Unknown cost remains unknown. Reservations are guards, not charges.</p>
+<div class="table-wrap">
+<table>
+<thead>
+<tr>
+<th>Provider / model</th>
+<th>Operation</th>
+<th>Input / output tokens</th>
+<th>Estimated USD</th>
+<th>Run</th>
+</tr>
+</thead>
+<tbody>{% for u in usage %}<tr>
+<td>{{ u.provider }}<small class="cell-note">{{ u.model }}</small>
+</td>
+<td>{{ u.operation }}</td>
+<td>{{ u.input_tokens if u.input_tokens is not none else 'unknown' }} / {{ u.output_tokens if u.output_tokens is not none else 'unknown' }}</td>
+<td>{{ u.estimated_usd if u.estimated_usd is not none else 'unknown' }}</td>
+<td>
+<a href="?q={{ u.run_id }}">{{ u.run_id[:8] }}…</a>
+</td>
+</tr>{% else %}<tr>
+<td colspan="5" class="empty">No model calls recorded. Offline fixture runs have no provider usage.</td>
+</tr>{% endfor %}</tbody>
+</table>
+</div>
+</section>
+<section class="panel">
+<h2>Activity timeline</h2>{% for event in events %}<article class="event">
+<span class="event-dot">
+</span>
+<div>
+<strong>{{ event.operation|replace('_',' ') }}</strong> <span class="tag">{{ event.status }}</span>
+<p>{{ event.stage }} · {{ event.timestamp }}{% if event.duration_ms is not none %} · {{ event.duration_ms }} ms{% endif %}</p>{% if event.error_code %}<p class="error-text">{{ event.error_code }}</p>{% endif %}<details>
+<summary>Correlation & measurements</summary>
+<p>Run: {{ event.run_id or '—' }}<br>Request: {{ event.request_id or '—' }}<br>Resource: {{ event.resource_id or '—' }}</p>
+<pre>{{ event.safe_metadata|tojson(indent=2) }}</pre>
+</details>
+</div>
+</article>{% else %}<p class="empty">No matching activity.</p>{% endfor %}</section>{% endblock %}

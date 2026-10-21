@@ -1,0 +1,21 @@
+{
+  "base_url": "http://127.0.0.1:8001",
+  "finance_running_required": false,
+  "ai_inference": false,
+  "publisher": "real HTTP to local test API",
+  "content_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2",
+  "approved_revision": 2,
+  "approved_digest": "31076b63ad16e30761ca1a16df300d4177a8b82beded1b755543f5d706588e0b",
+  "current_revision": 3,
+  "selected_channels": [
+    "website",
+    "linkedin"
+  ],
+  "content_url": "http://127.0.0.1:8001/content/930e2909-b50b-4e05-8898-4ee40d3cfbe2",
+  "published_urls": [
+    "http://127.0.0.1:8011/posts/930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:linkedin",
+    "http://127.0.0.1:8011/posts/930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:website"
+  ],
+  "request_id": "74d084b1-f6f9-4f57-a60f-a3b470681836",
+  "elapsed_seconds": 0.554
+}

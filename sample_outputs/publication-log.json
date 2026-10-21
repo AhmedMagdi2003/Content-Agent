@@ -1,0 +1,22 @@
+[
+  {
+    "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:linkedin",
+    "revision_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2",
+    "channel": "linkedin",
+    "status": "published",
+    "attempts": 1,
+    "url": "http://127.0.0.1:8011/posts/930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:linkedin",
+    "published_at": "2026-10-21T19:58:57.292954+00:00",
+    "error": null
+  },
+  {
+    "id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:website",
+    "revision_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2:2",
+    "channel": "website",
+    "status": "published",
+    "attempts": 1,
+    "url": "http://127.0.0.1:8011/posts/930e2909-b50b-4e05-8898-4ee40d3cfbe2:2:website",
+    "published_at": "2026-10-21T19:58:57.322274+00:00",
+    "error": null
+  }
+]

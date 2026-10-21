@@ -1,0 +1,31 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local database records and runtime storage
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+*.sqlite3-*
+/data/
+/tmp/
+
+# Python environments, caches and build artifacts
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.uv-cache/
+.cache/
+
+# Logs and temporary files
+*.log
+/logs/
+.DS_Store
+Thumbs.db

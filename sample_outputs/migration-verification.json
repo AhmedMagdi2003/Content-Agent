@@ -1,0 +1,35 @@
+{
+  "content": {
+    "content_items": {
+      "selected": 4,
+      "inserted": 0
+    },
+    "content_revisions": {
+      "selected": 7,
+      "inserted": 0
+    },
+    "publications": {
+      "selected": 9,
+      "inserted": 0
+    },
+    "events": {
+      "selected": 44,
+      "inserted": 0
+    },
+    "llm_usage": {
+      "selected": 0,
+      "inserted": 0
+    }
+  },
+  "publisher": {
+    "selected": 9,
+    "inserted": 0
+  },
+  "source_hashes_unchanged": true,
+  "source_sha256": {
+    "data\\workspace.db": "3234bbd83d6ce8032e62ed7327a2e8fd152bffe3fd66ddfc0230e65aaab27bbe",
+    "data\\publisher.db": "0047a580ce168477466c5191134867a6da06ff7507b8a55e2252119f3cb0c54a"
+  },
+  "repeat_is_idempotent": true,
+  "historical_sample_urls_verified": 3
+}

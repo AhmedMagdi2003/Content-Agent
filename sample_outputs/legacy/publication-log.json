@@ -1,0 +1,32 @@
+[
+  {
+    "id": "5d78aadf-e3f4-4a76-a0c4-03327937c90e:2:linkedin",
+    "revision_id": "5d78aadf-e3f4-4a76-a0c4-03327937c90e:2",
+    "channel": "linkedin",
+    "status": "published",
+    "attempts": 1,
+    "url": "http://127.0.0.1:8011/posts/5d78aadf-e3f4-4a76-a0c4-03327937c90e:2:linkedin",
+    "published_at": "2026-10-21T19:36:57.215683+00:00",
+    "error": null
+  },
+  {
+    "id": "5d78aadf-e3f4-4a76-a0c4-03327937c90e:2:newsletter",
+    "revision_id": "5d78aadf-e3f4-4a76-a0c4-03327937c90e:2",
+    "channel": "newsletter",
+    "status": "published",
+    "attempts": 1,
+    "url": "http://127.0.0.1:8011/posts/5d78aadf-e3f4-4a76-a0c4-03327937c90e:2:newsletter",
+    "published_at": "2026-10-21T19:36:57.261689+00:00",
+    "error": null
+  },
+  {
+    "id": "5d78aadf-e3f4-4a76-a0c4-03327937c90e:2:website",
+    "revision_id": "5d78aadf-e3f4-4a76-a0c4-03327937c90e:2",
+    "channel": "website",
+    "status": "published",
+    "attempts": 1,
+    "url": "http://127.0.0.1:8011/posts/5d78aadf-e3f4-4a76-a0c4-03327937c90e:2:website",
+    "published_at": "2026-10-21T19:36:57.294682+00:00",
+    "error": null
+  }
+]
