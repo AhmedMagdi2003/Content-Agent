@@ -25,6 +25,7 @@ def test_only_content_tables_exist(runtime):
         "content_items",
         "content_revisions",
         "publications",
+        "publication_attempts",
         "events",
         "llm_usage",
     }

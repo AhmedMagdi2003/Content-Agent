@@ -14,7 +14,7 @@ from sqlalchemy import select, update
 from content_app.ai import provider_for
 from content_app.errors import Conflict
 from content_app.integrations import IntegrationError, Publisher
-from content_app.models import Content, Publication, Revision, now, uid
+from content_app.models import Content, Publication, PublicationAttempt, Revision, now, uid
 from content_app.observability import emit
 from content_app.schemas import CHANNELS, Drafts
 
@@ -153,6 +153,40 @@ def revise(session, content_id, expected, drafts, channels, actor):
     return revision
 
 
+def regenerate(session, settings, content_id, expected, actor):
+    """Generate a bounded replacement revision for an existing submitted item."""
+    item = session.scalar(select(Content).where(Content.id == content_id).with_for_update())
+    if not item or item.revision != expected:
+        raise Conflict("Stale content revision; reload before generating")
+    previous = session.get(Revision, revision_id(content_id, expected))
+    run_id = uid()
+    provider = provider_for(settings, session, run_id)
+    try:
+        with tracing_context(enabled=False):
+            drafts = provider.draft(item.source).model_dump()
+        check_grounding(item.source, drafts)
+        if len(set(drafts.values())) != 3:
+            raise Conflict("Provider returned identical drafts")
+    except Exception:
+        emit(session, "content", "regenerate", "failed", run_id=run_id, resource_id=content_id,
+             error_code="DRAFT_FAILED")
+        session.commit()
+        raise
+    item.revision = expected + 1
+    previous.approved_at = previous.approved_by = None
+    if previous.decision == "approved":
+        previous.decision = "invalidated"
+    revision = Revision(
+        id=revision_id(content_id, expected + 1), content_id=content_id, number=expected + 1,
+        drafts=drafts, channels=list(CHANNELS), digest=revision_hash(drafts, CHANNELS)
+    )
+    session.add(revision)
+    emit(session, "content", "regenerate", "draft", run_id=run_id, resource_id=content_id,
+         actor=actor)
+    session.commit()
+    return revision
+
+
 def reject(session, content_id, expected, justification, actor):
     item = session.scalar(select(Content).where(Content.id == content_id).with_for_update())
     if not item or item.revision != expected:
@@ -240,17 +274,46 @@ def approve_publish(
         results.append(publication)
         if publication.status == "published" or publication.attempts >= 3:
             continue
+        if publication.status == "uncertain":
+            reconcile = getattr(publisher, "reconcile", None)
+            if reconcile is None:
+                continue
+            try:
+                result = reconcile(key, digest)
+            except IntegrationError as exc:
+                publication.error = str(exc)
+                continue
+            if result is None:
+                continue
+            publication.status = "published"
+            publication.destination = result.destination
+            publication.external_id = result.external_id
+            publication.url = result.url
+            publication.published_at, publication.error = now(), None
+            continue
         publication.attempts += 1
         try:
             # Verify again under the content lock, immediately before the HTTP write.
             if not revision.approved_at or revision.digest != digest:
                 raise Conflict("Approval invalidated")
-            url = publisher.publish(key, channel, revision.drafts[channel], digest)
-            publication.status, publication.url = "published", url
+            result = publisher.publish(key, channel, revision.drafts[channel], digest)
+            publication.status = "published"
+            publication.destination = result.destination
+            publication.external_id = result.external_id
+            publication.url = result.url
             publication.published_at, publication.error = now(), None
         except (IntegrationError, httpx.HTTPError, ValueError) as exc:
-            publication.status = "failed"
-            publication.error = str(exc) if isinstance(exc, IntegrationError) else "PUBLISH_FAILED"
+            code = str(exc) if isinstance(exc, IntegrationError) else "PUBLISH_FAILED"
+            publication.status = "uncertain" if code == "PUBLISH_UNCERTAIN" else "failed"
+            publication.error = code
+        session.add(
+            PublicationAttempt(
+                publication_id=publication.id,
+                attempt=publication.attempts,
+                status=publication.status,
+                error=publication.error,
+            )
+        )
         emit(
             session,
             "integration",

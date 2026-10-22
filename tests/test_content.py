@@ -198,3 +198,34 @@ def test_publication_performs_real_loopback_http(runtime):
         server.shutdown()
         thread.join(5)
         server.server_close()
+
+
+def test_uncertain_publish_is_reconciled_without_reposting(runtime):
+    cfg, app, client = runtime
+    item, revision = new_content(client)
+    calls = []
+
+    def handler(request):
+        calls.append(request.method)
+        if request.method == "POST":
+            raise httpx.ReadTimeout("response lost")
+        return httpx.Response(
+            200,
+            json={
+                "external_id": "content:website",
+                "url": "http://test/posts/content:website",
+                "destination": "local_test",
+                "digest": revision["digest"],
+            },
+        )
+
+    publisher = Publisher(cfg, httpx.MockTransport(handler))
+    with app.state.sessions() as session:
+        content.approve_publish(
+            session, cfg, item["id"], 1, revision["digest"], "reviewer", publisher
+        )
+        result = content.approve_publish(
+            session, cfg, item["id"], 1, revision["digest"], "reviewer", publisher, retry=True
+        )
+        assert result[0].status == "published"
+        assert calls == ["POST"] * 3 + ["GET"] * 3

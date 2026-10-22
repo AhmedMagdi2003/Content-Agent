@@ -76,8 +76,21 @@ class Publication(Base):
     id: Mapped[str] = mapped_column(String(150), primary_key=True)
     revision_id: Mapped[str] = mapped_column(ForeignKey("content_revisions.id"), index=True)
     channel: Mapped[str] = mapped_column(String(40))
+    destination: Mapped[str] = mapped_column(String(80), default="local_test")
     status: Mapped[str] = mapped_column(String(30), default="pending")
     attempts: Mapped[int] = mapped_column(Integer, default=0)
+    external_id: Mapped[str | None] = mapped_column(String(150), nullable=True)
     url: Mapped[str | None] = mapped_column(Text, nullable=True)
     published_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     error: Mapped[str | None] = mapped_column(String(120), nullable=True)
+
+
+class PublicationAttempt(Base):
+    __tablename__ = "publication_attempts"
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
+    publication_id: Mapped[str] = mapped_column(ForeignKey("publications.id"), index=True)
+    attempt: Mapped[int] = mapped_column(Integer)
+    status: Mapped[str] = mapped_column(String(30))
+    http_status: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    error: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)

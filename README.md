@@ -18,7 +18,8 @@ An automated content operations workspace that transforms research updates, proj
   - Reviewer rejections are recorded with justification and block publication.
 - **Automated Multi-Channel Publishing**:
   - Sends signed HTTP POST requests with HMAC SHA-256 authentication to test CMS and social endpoints.
-  - Tracks per-channel status (`published`, `failed`), external URLs, timestamps, and retry counts.
+  - Tracks per-channel status (`published`, `failed`, `uncertain`), external IDs, URLs, timestamps, and retry counts.
+  - Records every publication attempt; timeout outcomes are reconciled by idempotency key before another POST is allowed.
   - Idempotent execution protects against duplicate posts on retry or concurrent requests.
 - **Authoritative Persistence**: Backed by Supabase PostgreSQL in an isolated `content_ops` schema with Row Level Security (RLS).
 - **Operations & Cost Ledger**: Sanitized timeline joining HTTP requests, model token counts, latency, and estimated provider costs.
@@ -103,6 +104,7 @@ All application settings are prefixed with `CONTENT_` and loaded from `.env`.
 All endpoints under `/api/v1` require `Authorization: Bearer <CONTENT_REVIEWER_TOKEN>`.
 
 - `POST /api/v1/content`: Submit a source update; triggers bounded LangGraph workflow to generate and save three channel drafts.
+- `POST /api/v1/content/{id}/generate`: Regenerate three drafts for an existing item; requires the current revision number and creates a new revision.
 - `GET /api/v1/content/{id}`: Retrieve source update, full revision history, current drafts, and publication logs.
 - `PUT /api/v1/content/{id}`: Save edits to drafts and/or channel selections as a new immutable revision.
 - `POST /api/v1/content/{id}/approve-and-publish`: Authorize publication of the current revision to selected channels. Triggers automated HTTP calls to publisher.
@@ -124,3 +126,31 @@ Run code formatting and linting:
 ```powershell
 uv run ruff check .
 ```
+
+## Free end-to-end demonstration
+
+The bundled publisher is a local HTTP CMS/social test service. It is deliberately not LinkedIn or a production CMS: it accepts HMAC-authenticated requests, stores posts in SQLite, returns an external ID and a browsable URL, and supports idempotency and reconciliation. This is the assessment-safe demonstration when live platform permissions are unavailable.
+
+For a no-account demo, use `scripts.demo_setup` to create a local SQLite database and secrets, then start both services in separate PowerShell windows:
+
+```powershell
+uv run python -m scripts.demo_setup
+uv run uvicorn content_app.publisher:app --host 127.0.0.1 --port 8011
+uv run uvicorn content_app.main:app --host 127.0.0.1 --port 8001
+```
+
+Submit through the authenticated API (copy the token from `.env`):
+
+```powershell
+$token = '<copy CONTENT_REVIEWER_TOKEN from .env>'
+$h = @{ Authorization = "Bearer $token" }
+$item = Invoke-RestMethod http://127.0.0.1:8001/api/v1/content -Method Post -Headers $h `
+  -ContentType 'application/json' -Body (@{source='The fictional River Research team reviewed a sampling checklist at its workshop.'} | ConvertTo-Json)
+$draft = Invoke-RestMethod "http://127.0.0.1:8001/api/v1/content/$($item.id)" -Headers $h
+Invoke-RestMethod "http://127.0.0.1:8001/api/v1/content/$($item.id)/approve-and-publish" -Method Post -Headers $h `
+  -ContentType 'application/json' -Body (@{revision=1; digest=$draft.revisions[0].digest} | ConvertTo-Json)
+```
+
+The response contains one publication per selected channel. Open each returned `url`, or browse `http://127.0.0.1:8011/`; `GET /api/v1/content/{id}` and `GET /api/v1/activity` show durable statuses and audit events. Editing, regenerating, rejecting, or changing selected channels invalidates the previous approval.
+
+To connect production destinations later, implement the same `Publisher.publish` contract behind a new adapter. WordPress requires an application password and a reachable HTTPS site. LinkedIn requires an approved official application and the appropriate member or organization publishing permission; a free account alone does not guarantee that permission. Do not put those credentials in browser code or bypass platform restrictions.

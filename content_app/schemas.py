@@ -14,6 +14,10 @@ class Drafts(BaseModel):
 
 class ContentInput(BaseModel):
     source: str = Field(min_length=20, max_length=20000)
+    project_label: str | None = Field(default=None, max_length=200)
+    content_type: Literal["project_description", "project_update", "research_finding", "event"] = (
+        "project_update"
+    )
 
 
 class RevisionInput(BaseModel):
@@ -32,6 +36,10 @@ class RevisionInput(BaseModel):
 class ApprovalInput(BaseModel):
     revision: int = Field(ge=1)
     digest: str = Field(min_length=64, max_length=64)
+
+
+class GenerateInput(BaseModel):
+    revision: int = Field(ge=1)
 
 
 class RejectionInput(BaseModel):

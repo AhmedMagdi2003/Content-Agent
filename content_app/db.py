@@ -73,6 +73,21 @@ def initialize(engine):
                 text(f"UPDATE {table} SET decision='approved' WHERE approved_at IS NOT NULL")
             )
     if schema:
+        publication_columns = {
+            column["name"] for column in inspect(engine).get_columns("publications", schema=schema)
+        }
+        with engine.begin() as connection:
+            if "destination" not in publication_columns:
+                connection.execute(
+                    text(
+                        "ALTER TABLE content_ops.publications "
+                        "ADD COLUMN destination VARCHAR(80) NOT NULL DEFAULT 'local_test'"
+                    )
+                )
+            if "external_id" not in publication_columns:
+                connection.execute(
+                    text("ALTER TABLE content_ops.publications ADD COLUMN external_id VARCHAR(150)")
+                )
         with engine.begin() as connection:
             for table in Base.metadata.sorted_tables:
                 connection.execute(

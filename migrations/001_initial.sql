@@ -89,8 +89,10 @@ CREATE TABLE content_ops.publications (
 	id VARCHAR(150) NOT NULL,
 	revision_id VARCHAR(80) NOT NULL,
 	channel VARCHAR(40) NOT NULL,
+	destination VARCHAR(80) NOT NULL,
 	status VARCHAR(30) NOT NULL,
 	attempts INTEGER NOT NULL,
+	external_id VARCHAR(150),
 	url TEXT,
 	published_at TIMESTAMP WITH TIME ZONE,
 	error VARCHAR(120),
@@ -103,3 +105,20 @@ CREATE TABLE content_ops.publications (
 CREATE INDEX ix_content_ops_publications_revision_id ON content_ops.publications (revision_id);
 
 ALTER TABLE content_ops."publications" ENABLE ROW LEVEL SECURITY;
+
+CREATE TABLE content_ops.publication_attempts (
+	id VARCHAR(36) NOT NULL,
+	publication_id VARCHAR(150) NOT NULL,
+	attempt INTEGER NOT NULL,
+	status VARCHAR(30) NOT NULL,
+	http_status INTEGER,
+	error VARCHAR(120),
+	created_at TIMESTAMP WITH TIME ZONE NOT NULL,
+	PRIMARY KEY (id),
+	FOREIGN KEY(publication_id) REFERENCES content_ops.publications (id)
+);
+
+CREATE INDEX ix_content_ops_publication_attempts_publication_id
+ON content_ops.publication_attempts (publication_id);
+
+ALTER TABLE content_ops."publication_attempts" ENABLE ROW LEVEL SECURITY;

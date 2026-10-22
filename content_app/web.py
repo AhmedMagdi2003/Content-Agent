@@ -1,7 +1,7 @@
 import hmac
 import secrets
 from collections import defaultdict
-from contextlib import contextmanager
+from contextlib import asynccontextmanager, contextmanager
 from decimal import Decimal
 from pathlib import Path
 from time import monotonic, perf_counter
@@ -20,7 +20,7 @@ from starlette.middleware.sessions import SessionMiddleware
 from content_app import content
 from content_app.ai import ProviderError
 from content_app.config import Settings
-from content_app.db import make_engine, query_metrics
+from content_app.db import initialize, make_engine, query_metrics
 from content_app.errors import Conflict
 from content_app.integrations import IntegrationError
 from content_app.models import (
@@ -35,6 +35,7 @@ from content_app.observability import cost_summary, current_request, emit
 from content_app.schemas import (
     ApprovalInput,
     ContentInput,
+    GenerateInput,
     RejectionInput,
     RevisionInput,
 )
@@ -55,7 +56,13 @@ def create_app(settings=None, engine=None):
         cfg.require_runtime()
         engine = engine or make_engine(cfg.database_url.get_secret_value())
     sessions = sessionmaker(engine, expire_on_commit=False) if engine is not None else None
-    application = FastAPI(title="Content Agent", version="0.1.0")
+    @asynccontextmanager
+    async def lifespan(app):
+        if engine is not None:
+            initialize(engine)
+        yield
+
+    application = FastAPI(title="Content Agent", version="0.1.0", lifespan=lifespan)
     application.state.settings, application.state.engine = cfg, engine
     application.state.sessions = sessions
     application.add_middleware(
@@ -299,6 +306,10 @@ def create_app(settings=None, engine=None):
                 )
             ],
         }
+
+    @application.post("/api/v1/content/{content_id}/generate")
+    def generate_again(content_id: str, body: GenerateInput, session: DB, actor: Actor):
+        return record(content.regenerate(session, cfg, content_id, body.revision, actor))
 
     @application.put("/api/v1/content/{content_id}")
     def save_drafts(content_id: str, body: RevisionInput, session: DB, actor: Actor):

@@ -94,7 +94,11 @@ def create_publisher(settings=None, engine=None):
                     existing = session.get(Post, payload.key)
                     if not existing or existing.payload != payload.model_dump():
                         raise HTTPException(409, "Concurrent post conflict") from None
-        return {"url": f"{cfg.publisher_url}/posts/{payload.key}", "destination": "local_test"}
+        return {
+            "external_id": payload.key,
+            "url": f"{cfg.publisher_url}/posts/{payload.key}",
+            "destination": "local_test",
+        }
 
     @application.get("/posts/{key}", response_class=HTMLResponse)
     def page(key: str):
@@ -111,6 +115,19 @@ def create_publisher(settings=None, engine=None):
                 f"<p>LOCAL TEST • {html.escape(value.channel)}</p>"
                 f"<h1>Published announcement</h1><pre>{html.escape(value.text)}</pre></html>"
             )
+
+    @application.get("/api/posts/{key}")
+    def post_metadata(key: str):
+        with Session(engine) as session:
+            value = session.get(Post, key)
+            if not value:
+                raise HTTPException(404)
+            return {
+                "external_id": value.key,
+                "url": f"{cfg.publisher_url}/posts/{value.key}",
+                "destination": "local_test",
+                "digest": value.payload["digest"],
+            }
 
     @application.get("/", response_class=HTMLResponse)
     def index():
