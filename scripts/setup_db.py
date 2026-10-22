@@ -1,5 +1,5 @@
-from content_app.config import Settings
-from content_app.db import initialize, make_engine
+from app.config import Settings
+from app.db import initialize, make_engine
 
 if __name__ == "__main__":
     settings = Settings()

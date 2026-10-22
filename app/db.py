@@ -6,8 +6,8 @@ from time import perf_counter
 from sqlalchemy import create_engine, event, inspect, text
 from sqlalchemy.engine import make_url
 
-from content_app.config import APP_ROOT
-from content_app.models import Base
+from app.config import APP_ROOT
+from app.models import Base
 
 query_metrics: ContextVar[dict | None] = ContextVar("content_query_metrics", default=None)
 
@@ -57,24 +57,50 @@ def initialize(engine):
     else:
         engine = engine.execution_options(schema_translate_map={"content_ops": None})
     Base.metadata.create_all(engine)
-    columns = {
-        column["name"] for column in inspect(engine).get_columns("content_revisions", schema=schema)
+    inspector = inspect(engine)
+
+    rev_columns = {
+        column["name"] for column in inspector.get_columns("content_revisions", schema=schema)
     }
-    table = "content_ops.content_revisions" if schema else "content_revisions"
-    if "decision" not in columns:
+    rev_table = "content_ops.content_revisions" if schema else "content_revisions"
+    if "decision" not in rev_columns:
         with engine.begin() as connection:
             connection.execute(
                 text(
-                    f"ALTER TABLE {table} ADD COLUMN decision VARCHAR(20) NOT NULL DEFAULT 'draft'"
+                    f"ALTER TABLE {rev_table} "
+                    "ADD COLUMN decision VARCHAR(20) NOT NULL DEFAULT 'draft'"
                 )
             )
-            connection.execute(text(f"ALTER TABLE {table} ADD COLUMN decision_reason TEXT"))
+            connection.execute(text(f"ALTER TABLE {rev_table} ADD COLUMN decision_reason TEXT"))
             connection.execute(
-                text(f"UPDATE {table} SET decision='approved' WHERE approved_at IS NOT NULL")
+                text(f"UPDATE {rev_table} SET decision='approved' WHERE approved_at IS NOT NULL")
             )
+    if "citations" not in rev_columns:
+        with engine.begin() as connection:
+            connection.execute(text(f"ALTER TABLE {rev_table} ADD COLUMN citations JSON"))
+
+    item_columns = {
+        column["name"] for column in inspector.get_columns("content_items", schema=schema)
+    }
+    item_table = "content_ops.content_items" if schema else "content_items"
+    with engine.begin() as connection:
+        if "project_slug" not in item_columns:
+            connection.execute(
+                text(f"ALTER TABLE {item_table} ADD COLUMN project_slug VARCHAR(100)")
+            )
+        if "content_type" not in item_columns:
+            connection.execute(
+                text(
+                    f"ALTER TABLE {item_table} "
+                    "ADD COLUMN content_type VARCHAR(50) DEFAULT 'project_update'"
+                )
+            )
+        if "sources_context" not in item_columns:
+            connection.execute(text(f"ALTER TABLE {item_table} ADD COLUMN sources_context JSON"))
+
     if schema:
         publication_columns = {
-            column["name"] for column in inspect(engine).get_columns("publications", schema=schema)
+            column["name"] for column in inspector.get_columns("publications", schema=schema)
         }
         with engine.begin() as connection:
             if "destination" not in publication_columns:

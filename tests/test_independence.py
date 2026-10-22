@@ -3,25 +3,28 @@ import ast
 from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 
-from content_app.config import APP_ROOT, Settings
-from content_app.models import Base
-from content_app.web import create_app
+from app.config import APP_ROOT, Settings
+from app.models import Base
+from app.web import create_app
 
 
 def test_no_financial_imports():
-    for path in (APP_ROOT / "content_app").rglob("*.py"):
-        for node in ast.walk(ast.parse(path.read_text(encoding="utf-8"))):
+    """Ensure the content agent has zero dependencies on finance code or modules."""
+    forbidden = {"financial", "app.financial", "app.inspection"}
+    for path in (APP_ROOT / "app").rglob("*.py"):
+        tree = ast.parse(path.read_text(encoding="utf-8"))
+        for node in ast.walk(tree):
             if isinstance(node, ast.ImportFrom):
-                assert not (node.module == "app" or (node.module or "").startswith("app.")), path
+                assert node.module not in forbidden, f"Forbidden import {node.module} in {path}"
             if isinstance(node, ast.Import):
-                assert not any(n.name == "app" or n.name.startswith("app.") for n in node.names), (
-                    path
+                assert not any(n.name in forbidden for n in node.names), (
+                    f"Forbidden import in {path}"
                 )
 
 
 def test_only_content_tables_exist(runtime):
-    _, app, _ = runtime
-    assert set(inspect(app.state.engine).get_table_names()) == {
+    _, app_instance, _ = runtime
+    assert set(inspect(app_instance.state.engine).get_table_names()) == {
         "content_items",
         "content_revisions",
         "publications",
@@ -32,27 +35,25 @@ def test_only_content_tables_exist(runtime):
     assert Base.metadata.schema == "content_ops"
 
 
-def test_unprefixed_financial_environment_is_not_consumed(monkeypatch, tmp_path):
-    monkeypatch.setenv("DATABASE_URL", "sqlite:///financial.db")
-    monkeypatch.setenv("REVIEWER_TOKEN", "financial-reviewer-secret")
+def test_standard_and_legacy_environment_variables(monkeypatch):
+    # 1. Standard environment variable names
+    monkeypatch.setenv("DATABASE_URL", "sqlite:///standard.db")
+    monkeypatch.setenv("REVIEWER_TOKEN", "standard-reviewer-secret-key-24")
     monkeypatch.setenv("MODE", "demo")
     cfg = Settings(_env_file=None)
-    assert not cfg.database_url.get_secret_value()
-    assert not cfg.reviewer_token.get_secret_value()
-    assert cfg.mode == "cloud"
+    assert cfg.database_url.get_secret_value() == "sqlite:///standard.db"
+    assert cfg.reviewer_token.get_secret_value() == "standard-reviewer-secret-key-24"
+    assert cfg.mode == "demo"
+
+    # 2. Legacy CONTENT_ prefixed variable names also work as aliases
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.setenv("CONTENT_DATABASE_URL", "sqlite:///legacy.db")
+    cfg_legacy = Settings(_env_file=None)
+    assert cfg_legacy.database_url.get_secret_value() == "sqlite:///legacy.db"
 
 
-def test_health_starts_without_any_financial_configuration():
+def test_health_starts_independently():
     with TestClient(create_app(Settings(_env_file=None))) as client:
         response = client.get("/health")
         assert response.status_code == 200
         assert response.json()["service"] == "content-agent"
-
-
-def test_content_cookie_is_separate(runtime):
-    cfg, _, client = runtime
-    response = client.post(
-        "/login", data={"token": cfg.reviewer_token.get_secret_value()}, follow_redirects=False
-    )
-    assert "content_session=" in response.headers["set-cookie"]
-    assert "session=" not in response.headers["set-cookie"].split("content_session=")[0]

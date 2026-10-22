@@ -1,9 +1,9 @@
 import pytest
 from fastapi.testclient import TestClient
 
-from content_app.config import Settings
-from content_app.db import initialize, make_engine
-from content_app.web import create_app
+from app.config import Settings
+from app.db import initialize, make_engine
+from app.web import create_app
 
 
 @pytest.fixture

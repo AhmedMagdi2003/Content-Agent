@@ -1,0 +1,217 @@
+{% extends 'base.html' %}
+{% block title %}Review drafts{% endblock %}
+{% block crumb %}Content Operations / Review{% endblock %}
+{% block body %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">REVIEW & APPROVAL</p>
+    <h1>Make the message yours.</h1>
+    <p>Revision {{ revision.number }} · <span class="tag">{{ revision.decision|title }}</span> · <a href="/operations?q={{ item.id }}">Activity ↗</a>
+      {% if item.project_slug %} · <span class="tag" style="background:#e0ede7; color:#1e6255; font-weight:600;">Series: {{ item.project_slug }}</span>{% endif %}
+    </p>
+  </div>
+  <a href="/content{% if item.project_slug %}?project={{ item.project_slug }}{% endif %}">← Content library</a>
+</div>
+
+{% if item.project_slug %}
+<section class="panel" style="border-left: 4px solid var(--teal); background: #f8faf8;">
+  <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+    <div>
+      <p class="eyebrow" style="margin-bottom: 4px;">PROJECT CONTINUITY & PAST ACHIEVEMENTS</p>
+      <h2 style="margin: 0 0 6px 0;">Research Series: {{ item.project_slug }}</h2>
+      <p style="margin: 0; color: var(--muted); font-size: 13px;">This update maintains narrative awareness of {{ project_updates|length }} weekly update(s) in this research stream.</p>
+    </div>
+    <span class="tag" style="background: #eef2ed;">{{ milestones|length }} Milestones Tracked</span>
+  </div>
+
+  {% if milestones %}
+    <div style="margin-top: 14px; padding: 12px; background: white; border-radius: 6px; border: 1px solid var(--line);">
+      <strong style="font-size: 12px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px;">Cumulative Milestones Record:</strong>
+      <ul style="margin: 0; padding-left: 20px;">
+        {% for m in milestones %}
+          <li style="margin-bottom: 4px; font-size: 13px;">
+            <span style="color: var(--muted);">[{{ m.date or 'Recorded' }}]</span> {{ m.summary or m.title }}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  {% endif %}
+
+  {% if project_updates|length > 1 %}
+    <details style="margin-top: 10px; font-size: 13px;">
+      <summary style="cursor: pointer; color: var(--teal); font-weight: 600;">View previous posts in this project ({{ project_updates|length - 1 }})</summary>
+      <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
+        {% for pu in project_updates %}
+          {% if pu.id != item.id %}
+            <div style="padding: 8px 10px; background: white; border-radius: 4px; border: 1px solid var(--line); display: flex; justify-content: space-between;">
+              <span><strong>{{ pu.source[:80] }}…</strong> <small style="color: var(--muted);">({{ pu.created_at.strftime('%d %b %Y') }})</small></span>
+              <a href="/content/{{ pu.id }}" style="font-size: 12px;">View post →</a>
+            </div>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </details>
+  {% endif %}
+</section>
+{% endif %}
+
+<section class="panel">
+  <h2>Source facts & Grounding</h2>
+  <p class="source-text">{{ item.source }}</p>
+
+  {% if sources_context and (sources_context.given_links or sources_context.web_search) %}
+    <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);">
+      <strong style="font-size: 12px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px;">Inspected Sources & Verified Evidence:</strong>
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        {% for link in sources_context.given_links %}
+          <div style="padding: 8px 12px; background: #f6f8f6; border-radius: 6px; border: 1px solid #e2eae3; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong>🔗 <a href="{{ link.url }}" target="_blank" rel="noopener">{{ link.title }}</a></strong>
+              <span class="tag" style="font-size: 11px;">Inspected URL</span>
+            </div>
+            <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 12px;">{{ link.text[:220] }}…</p>
+          </div>
+        {% endfor %}
+        {% for res in sources_context.web_search %}
+          <div style="padding: 8px 12px; background: #f6f8f6; border-radius: 6px; border: 1px solid #e2eae3; font-size: 13px;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <strong>🔍 <a href="{{ res.url }}" target="_blank" rel="noopener">{{ res.title }}</a></strong>
+              <span class="tag" style="font-size: 11px;">Web Search</span>
+            </div>
+            <p style="margin: 4px 0 0 0; color: var(--muted); font-size: 12px;">{{ res.snippet }}</p>
+          </div>
+        {% endfor %}
+      </div>
+    </div>
+  {% endif %}
+</section>
+
+<!-- Source Citations Ledger -->
+<section class="panel" style="border-top: 3px solid var(--teal);">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+    <div>
+      <h2 style="margin: 0;">Factual Citations & Source Evidence</h2>
+      <p style="margin: 2px 0 0 0; color: var(--muted); font-size: 13px;">Zero hallucination guarantee: every block of words is anchored to verified source text below.</p>
+    </div>
+    <span class="tag" style="background: #e2f2e7; color: #1e6255; font-weight: 600;">✓ Grounded & Verified</span>
+  </div>
+
+  {% if citations %}
+    <div style="display: grid; gap: 10px;">
+      {% for c in citations %}
+        <div style="padding: 12px 14px; background: white; border: 1px solid var(--line); border-radius: 8px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="font-weight: 700; color: var(--teal); background: #eef5f1; padding: 2px 8px; border-radius: 4px; font-size: 12px;">[{{ c.block_id or 'C' ~ loop.index }}]</span>
+              <span class="tag" style="font-size: 11px; text-transform: uppercase;">{{ c.channel|default('all') }}</span>
+              <span style="font-size: 12px; color: var(--muted);">Source: <strong>{{ c.source_title or c.source_type|replace('_', ' ')|title }}</strong></span>
+            </div>
+            {% if c.source_url %}
+              <a href="{{ c.source_url }}" target="_blank" rel="noopener" style="font-size: 12px;">View source link ↗</a>
+            {% endif %}
+          </div>
+          <div style="font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--ink);">
+            "{{ c.claim }}"
+          </div>
+          {% if c.source_quote %}
+            <div style="padding: 8px 10px; background: #f9fbf9; border-left: 3px solid var(--teal); border-radius: 2px; font-size: 12px; color: var(--muted); font-style: italic;">
+              Evidence quote: "{{ c.source_quote }}"
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  {% else %}
+    <p style="color: var(--muted); margin: 0; font-size: 13px;">No explicit citation blocks recorded for this revision.</p>
+  {% endif %}
+</section>
+
+<form id="draft-form" data-id="{{ item.id }}" data-revision="{{ revision.number }}" data-digest="{{ revision.digest }}">
+  <div class="grid three">
+    {% for channel in ['linkedin','newsletter','website'] %}
+      <section class="panel draft-card">
+        <div class="channel-icon">{{ {'linkedin':'in','newsletter':'✉','website':'www'}[channel] }}</div>
+        <h2>{{ channel|title }}</h2>
+        <label class="check">
+          <input type="checkbox" name="channels" value="{{ channel }}" {{ 'checked' if channel in revision.channels }}> Select for publication
+        </label>
+        <label for="draft-{{ channel }}" class="sr-only">{{ channel }} draft</label>
+        <textarea id="draft-{{ channel }}" name="{{ channel }}" rows="17" required>{{ revision.drafts[channel] }}</textarea>
+      </section>
+    {% endfor %}
+  </div>
+
+  <section class="panel approval-panel">
+    <div>
+      <h2>Your approval is the final step.</h2>
+      <p>Save any edits first. Approval covers this exact revision and the selected channels.</p>
+      <small>Local mock CMS / social API · no organizational accounts connected.</small>
+    </div>
+    <div class="actions">
+      <button type="submit" class="secondary">Save new revision</button>
+      <button type="button" id="approve-publish" {% if revision.decision == 'rejected' %}disabled{% endif %}>Approve & Publish →</button>
+      <button type="button" class="secondary" id="retry-publish" {% if not revision.approved_at %}disabled{% endif %}>Retry failed channels</button>
+    </div>
+  </section>
+</form>
+
+{% if revision.decision == 'rejected' %}
+  <section class="issue blocking">
+    <strong>Revision rejected</strong>
+    <p>{{ revision.decision_reason }}</p>
+    <p>Save a revised draft before requesting approval again.</p>
+  </section>
+{% endif %}
+
+{% if not revision.approved_at and revision.decision != 'rejected' %}
+  <section class="panel">
+    <h2>Not ready to publish?</h2>
+    <form id="reject-form" data-id="{{ item.id }}" data-revision="{{ revision.number }}">
+      <label for="rejection-reason">Reason for rejection</label>
+      <textarea id="rejection-reason" name="justification" minlength="10" maxlength="2000" rows="2" required></textarea>
+      <button type="submit" class="danger">Reject revision</button>
+    </form>
+  </section>
+{% endif %}
+
+<section class="panel">
+  <h2>Publication log</h2>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Channel</th>
+          <th>Status</th>
+          <th>Attempts</th>
+          <th>Published at (UTC)</th>
+          <th>Result</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for p in publications %}
+          <tr>
+            <td>{{ p.channel|title }}</td>
+            <td>
+              <span class="tag {{ 'warning' if p.status == 'failed' }}">{{ p.status }}</span>
+            </td>
+            <td>{{ p.attempts }}/3</td>
+            <td>{{ p.published_at or '—' }}</td>
+            <td>{% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">View published post ↗</a>{% else %}{{ p.error or 'Pending' }}{% endif %}</td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="5" class="empty">Nothing has been published. Review your drafts and explicitly approve when ready.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<details class="panel">
+  <summary>Revision history</summary>
+  {% for r in history %}
+    <p>Revision {{ r.number }} · {{ r.channels|join(', ') }} · {{ 'Approved' if r.approved_at else 'Approval required' }}</p>
+  {% endfor %}
+</details>
+{% endblock %}

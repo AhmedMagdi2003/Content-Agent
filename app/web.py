@@ -17,13 +17,13 @@ from sqlalchemy import or_, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
 
-from content_app import content
-from content_app.ai import ProviderError
-from content_app.config import Settings
-from content_app.db import initialize, make_engine, query_metrics
-from content_app.errors import Conflict
-from content_app.integrations import IntegrationError
-from content_app.models import (
+from app import content
+from app.ai import ProviderError
+from app.config import Settings
+from app.db import initialize, make_engine, query_metrics
+from app.errors import Conflict
+from app.integrations import IntegrationError
+from app.models import (
     Content,
     Event,
     Publication,
@@ -31,8 +31,8 @@ from content_app.models import (
     Usage,
     uid,
 )
-from content_app.observability import cost_summary, current_request, emit
-from content_app.schemas import (
+from app.observability import cost_summary, current_request, emit
+from app.schemas import (
     ApprovalInput,
     ContentInput,
     GenerateInput,
@@ -56,6 +56,7 @@ def create_app(settings=None, engine=None):
         cfg.require_runtime()
         engine = engine or make_engine(cfg.database_url.get_secret_value())
     sessions = sessionmaker(engine, expire_on_commit=False) if engine is not None else None
+
     @asynccontextmanager
     async def lifespan(app):
         if engine is not None:
@@ -224,14 +225,28 @@ def create_app(settings=None, engine=None):
         return templates.TemplateResponse(request, template, context)
 
     @application.get("/content", response_class=HTMLResponse)
-    def content_page(request: Request):
+    def content_page(request: Request, project: str | None = None):
         if not request.session.get("reviewer"):
             return RedirectResponse("/login", 303)
         with page_session(request) as session:
+            query = select(Content).order_by(Content.created_at.desc())
+            if project:
+                query = query.where(Content.project_slug == project)
+            items = session.scalars(query).all()
+
+            projects_raw = session.scalars(
+                select(Content.project_slug)
+                .where(Content.project_slug.isnot(None))
+                .distinct()
+            ).all()
+            projects = sorted([p for p in projects_raw if p])
+
             return render(
                 request,
                 "content.html",
-                items=session.scalars(select(Content).order_by(Content.created_at.desc())).all(),
+                items=items,
+                projects=projects,
+                selected_project=project,
             )
 
     @application.get("/content/{content_id}", response_class=HTMLResponse)
@@ -243,11 +258,28 @@ def create_app(settings=None, engine=None):
             if not item:
                 raise HTTPException(404)
             revision = session.get(Revision, content.revision_id(item.id, item.revision))
+
+            project_updates = []
+            milestones = []
+            if item.project_slug:
+                project_updates = session.scalars(
+                    select(Content)
+                    .where(Content.project_slug == item.project_slug)
+                    .order_by(Content.created_at.asc())
+                ).all()
+                for pu in project_updates:
+                    if pu.sources_context and "achievements" in pu.sources_context:
+                        milestones.extend(pu.sources_context["achievements"])
+
             return render(
                 request,
                 "content_detail.html",
                 item=item,
                 revision=revision,
+                citations=revision.citations or [],
+                sources_context=item.sources_context or {},
+                project_updates=project_updates,
+                milestones=milestones,
                 publications=session.scalars(
                     select(Publication).where(Publication.revision_id == revision.id)
                 ).all(),
@@ -284,7 +316,65 @@ def create_app(settings=None, engine=None):
 
     @application.post("/api/v1/content")
     def draft(body: ContentInput, session: DB, actor: Actor):
-        return record(content.generate(session, cfg, body.source, actor))
+        project = body.project_slug or body.project_label
+        item = content.generate(
+            session,
+            cfg,
+            body.source,
+            actor,
+            project_slug=project,
+            enable_web_search=body.enable_web_search,
+            search_query=body.search_query,
+            given_links=body.given_links,
+        )
+        return record(item)
+
+    @application.get("/api/v1/projects")
+    def list_projects(session: DB, actor: Actor):
+        projects_raw = session.scalars(
+            select(Content.project_slug)
+            .where(Content.project_slug.isnot(None))
+            .distinct()
+        ).all()
+        results = []
+        for slug in sorted([p for p in projects_raw if p]):
+            items = session.scalars(
+                select(Content)
+                .where(Content.project_slug == slug)
+                .order_by(Content.created_at.asc())
+            ).all()
+            achievements = []
+            for item in items:
+                if item.sources_context and "achievements" in item.sources_context:
+                    achievements.extend(item.sources_context["achievements"])
+            results.append({
+                "project_slug": slug,
+                "post_count": len(items),
+                "first_post_date": items[0].created_at.strftime("%Y-%m-%d") if items else None,
+                "latest_post_date": items[-1].created_at.strftime("%Y-%m-%d") if items else None,
+                "achievements": achievements,
+            })
+        return results
+
+    @application.get("/api/v1/projects/{project_slug}")
+    def get_project_details(project_slug: str, session: DB, actor: Actor):
+        items = session.scalars(
+            select(Content)
+            .where(Content.project_slug == project_slug)
+            .order_by(Content.created_at.asc())
+        ).all()
+        if not items:
+            raise HTTPException(404, "Project not found")
+        achievements = []
+        for item in items:
+            if item.sources_context and "achievements" in item.sources_context:
+                achievements.extend(item.sources_context["achievements"])
+        return {
+            "project_slug": project_slug,
+            "post_count": len(items),
+            "achievements": achievements,
+            "posts": [record(item) for item in items],
+        }
 
     @application.get("/api/v1/content/{content_id}")
     def content_status(content_id: str, session: DB, actor: Actor):

@@ -7,9 +7,9 @@ from pathlib import Path
 
 from sqlalchemy import MetaData, Table, create_engine, select
 
-from content_app.config import Settings
-from content_app.db import initialize, make_engine
-from content_app.models import Base
+from app.config import Settings
+from app.db import initialize, make_engine
+from app.models import Base
 
 
 def readonly_engine(path):
@@ -96,7 +96,7 @@ def import_content(source_path, target):
 
 
 def import_publisher(source_path, target_path):
-    from content_app.publisher import Post, PublisherBase
+    from app.publisher import Post, PublisherBase
 
     source_path = Path(source_path).resolve(strict=True)
     target_path = Path(target_path).resolve()

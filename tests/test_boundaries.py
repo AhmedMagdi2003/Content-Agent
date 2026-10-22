@@ -2,10 +2,10 @@ from decimal import Decimal
 
 import pytest
 
-from content_app.content import check_grounding
-from content_app.errors import Conflict
-from content_app.models import Usage
-from content_app.observability import cost_summary
+from app.content import check_grounding
+from app.errors import Conflict
+from app.models import Usage
+from app.observability import cost_summary
 
 
 def test_partial_cost_is_not_presented_as_complete():

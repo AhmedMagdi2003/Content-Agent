@@ -1,6 +1,6 @@
 from sqlalchemy import create_engine, text
 
-from content_app.db import initialize
+from app.db import initialize
 
 
 def test_rejection_blocks_publication_until_new_revision(runtime):

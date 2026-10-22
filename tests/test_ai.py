@@ -5,9 +5,9 @@ import pytest
 from pydantic import SecretStr
 from sqlalchemy import select
 
-from content_app.ai import LiveProvider, ProviderError
-from content_app.models import Usage
-from content_app.schemas import Drafts
+from app.ai import LiveProvider, ProviderError
+from app.models import Usage
+from app.schemas import Drafts
 
 
 class Model:

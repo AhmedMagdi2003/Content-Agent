@@ -14,8 +14,8 @@ from sqlalchemy import JSON, String, Text, create_engine, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column
 
-from content_app.config import Settings
-from content_app.schemas import CHANNELS
+from app.config import Settings
+from app.schemas import CHANNELS
 
 
 class PublisherBase(DeclarativeBase):

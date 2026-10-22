@@ -3,8 +3,8 @@
 from sqlalchemy.dialects.postgresql import dialect
 from sqlalchemy.schema import CreateIndex, CreateTable
 
-from content_app.config import APP_ROOT
-from content_app.models import Base
+from app.config import APP_ROOT
+from app.models import Base
 
 if __name__ == "__main__":
     lines = [

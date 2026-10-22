@@ -54,6 +54,11 @@ class Content(Base):
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=uid)
     source: Mapped[str] = mapped_column(Text)
     revision: Mapped[int] = mapped_column(Integer, default=1)
+    project_slug: Mapped[str | None] = mapped_column(String(100), nullable=True, index=True)
+    content_type: Mapped[str] = mapped_column(
+        String(50), default="project_update", server_default="project_update"
+    )
+    sources_context: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=now)
 
 
@@ -69,6 +74,7 @@ class Revision(Base):
     decision_reason: Mapped[str | None] = mapped_column(Text, nullable=True)
     approved_by: Mapped[str | None] = mapped_column(String(100), nullable=True)
     approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    citations: Mapped[list | None] = mapped_column(JSON, default=list, nullable=True)
 
 
 class Publication(Base):

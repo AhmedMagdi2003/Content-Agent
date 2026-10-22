@@ -2,8 +2,8 @@ import json
 
 from sqlalchemy import select
 
-from content_app.models import Event
-from content_app.web import create_app
+from app.models import Event
+from app.web import create_app
 
 
 def test_auth_csrf_and_content_only_dashboard(runtime):

@@ -26,8 +26,8 @@
 </nav>
 <div class="sidebar-foot">
 <span class="status-dot">
-</span> {{ 'Offline demo' if mode == 'demo' else 'Cloud workspace' }}
-<p>Fictional source updates.<br>Test publishing destinations.</p>
+</span> Connected Workspace
+<p>Multi-channel drafting.<br>Audited publishing pipeline.</p>
 <button class="quiet" id="logout">Sign out</button>
 </div>
 </aside>
@@ -39,7 +39,6 @@
 <main id="main">
 <div id="notice" role="status" aria-live="polite" hidden>
 </div>
-{% if mode == 'demo' %}<div class="demo-banner">DEMO MODE · Independent content data and demo templates. No AI model is called. Publishing uses real HTTP to a local test API.</div>{% endif %}
 {% block body %}{% endblock %}</main>
 <footer>Content Agent <span>Review the facts. Publish with approval.</span>
 </footer>

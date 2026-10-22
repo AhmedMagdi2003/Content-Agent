@@ -6,12 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, select
 
-from content_app import content
-from content_app.errors import Conflict
-from content_app.integrations import Publisher
-from content_app.models import Publication
-from content_app.publisher import Post, create_publisher
-from content_app.schemas import Drafts
+from app import content
+from app.errors import Conflict
+from app.integrations import Publisher
+from app.models import Publication
+from app.publisher import Post, create_publisher
+from app.schemas import Drafts
 
 SOURCE = "The fictional River Research team reviewed a sampling checklist at its workshop."
 
@@ -129,7 +129,7 @@ def test_retry_ceiling(runtime):
 
 def test_test_publisher_signatures_idempotency_and_escaped_page(runtime, tmp_path):
     cfg, _, _ = runtime
-    from content_app.integrations import signed_body
+    from app.integrations import signed_body
 
     engine = create_engine(
         f"sqlite:///{tmp_path / 'pub.db'}", connect_args={"check_same_thread": False}

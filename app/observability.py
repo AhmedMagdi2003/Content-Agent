@@ -3,7 +3,7 @@ import logging
 from contextvars import ContextVar
 from decimal import Decimal
 
-from content_app.models import Event, now
+from app.models import Event, now
 
 logger = logging.getLogger("impact.events")
 current_request: ContextVar[str | None] = ContextVar("current_request", default=None)

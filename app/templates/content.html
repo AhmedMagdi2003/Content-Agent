@@ -1,0 +1,103 @@
+{% extends 'base.html' %}
+{% block title %}Content Operations{% endblock %}
+{% block crumb %}Content Operations{% endblock %}
+{% block body %}
+<div class="page-heading">
+  <div>
+    <p class="eyebrow">CONTENT OPERATIONS</p>
+    <h1>From project work to shared stories.</h1>
+    <p>Follow-up memory across project milestones. Factual block-by-block citations. Zero hallucination.</p>
+  </div>
+  <span class="tag">PUBLISHING PIPELINE</span>
+</div>
+
+<div class="grid two-one">
+  <section class="panel">
+    <h2>Start with the facts</h2>
+    <p>Paste a research update, project milestone or event brief. Track continuity across past updates and verify claims with source citations.</p>
+
+    <form id="content-form">
+      <div style="margin-bottom: 16px;">
+        <label for="project_select" style="font-weight: 600; display: block; margin-bottom: 6px;">Research Project / Series (Follow-up Continuity)</label>
+        <div style="display: flex; gap: 8px;">
+          <select id="project_select" name="project_slug" style="flex: 1; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px; background: white;">
+            <option value="">-- Standalone Post (No Project Continuity) --</option>
+            {% for p in projects %}
+              <option value="{{ p }}" {% if selected_project == p %}selected{% endif %}>{{ p }}</option>
+            {% endfor %}
+            <option value="__new__">+ Create New Research Project...</option>
+          </select>
+        </div>
+        <div id="new_project_wrap" style="display: none; margin-top: 8px;">
+          <input type="text" id="new_project_slug" name="new_project_slug" placeholder="e.g. river-water-research" style="width: 100%; padding: 8px 12px; border: 1px solid var(--line); border-radius: 6px;">
+          <small style="color: var(--muted); display: block; margin-top: 4px;">Enter a unique project identifier. Subsequent posts to this project maintain awareness of all prior achievements.</small>
+        </div>
+      </div>
+
+      <div style="margin-bottom: 16px;">
+        <label for="source" style="font-weight: 600; display: block; margin-bottom: 6px;">Source update facts</label>
+        <textarea id="source" name="source" rows="9" minlength="20" maxlength="20000" required placeholder="The River Research team completed a workshop on water sampling. Participants reviewed the field protocol and agreed to test the revised checklist. Paste links (e.g. https://...) to have them automatically inspected."></textarea>
+      </div>
+
+      <div style="margin-bottom: 18px; padding: 12px 14px; background: #f0f6f3; border-radius: 8px; border: 1px solid #d4e5db;">
+        <label style="display: flex; align-items: center; gap: 8px; font-weight: 600; cursor: pointer;">
+          <input type="checkbox" id="enable_web_search" name="enable_web_search">
+          <span>Enable Web Search & Fact Retrieval</span>
+        </label>
+        <div id="web_search_fields" style="display: none; margin-top: 10px;">
+          <label for="search_query" style="font-size: 13px; color: var(--muted); display: block; margin-bottom: 4px;">Custom Search Query (optional; defaults to source update summary):</label>
+          <input type="text" id="search_query" name="search_query" placeholder="e.g. river water sampling checklist standards 2026" style="width: 100%; padding: 7px 10px; border: 1px solid var(--line); border-radius: 6px;">
+        </div>
+      </div>
+
+      <button type="submit">Generate three drafts with citations →</button>
+      <small class="form-note">Fact-grounded generation across LinkedIn, Newsletter, and Website with block citations</small>
+    </form>
+  </section>
+
+  <section class="panel accent">
+    <p class="eyebrow">RESEARCH TRACKING & ZERO HALLUCINATION</p>
+    <ol class="steps">
+      <li>
+        <strong>Follow-up & Past Post Awareness</strong>
+        <p>Posts in a project series track previous achievements so updates reflect cohesive weekly progress.</p>
+      </li>
+      <li>
+        <strong>Inspected Links & Web Search</strong>
+        <p>URLs in your update are scraped for ground truth, and optional web searches gather verified facts.</p>
+      </li>
+      <li>
+        <strong>Block Citations & Review</strong>
+        <p>Every block of words links directly to its source quote, giving reviewers full confidence before approval.</p>
+      </li>
+    </ol>
+  </section>
+</div>
+
+<section class="panel">
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; flex-wrap: wrap; gap: 10px;">
+    <h2>Your content library</h2>
+    {% if projects %}
+      <div style="display: flex; gap: 8px; align-items: center; font-size: 13px; flex-wrap: wrap;">
+        <span style="color: var(--muted);">Filter by project:</span>
+        <a href="/content" style="padding: 4px 10px; border-radius: 6px; {% if not selected_project %}background: var(--teal); color: white;{% else %}background: #eef2ed;{% endif %}">All</a>
+        {% for p in projects %}
+          <a href="/content?project={{ p }}" style="padding: 4px 10px; border-radius: 6px; {% if selected_project == p %}background: var(--teal); color: white;{% else %}background: #eef2ed;{% endif %}">{{ p }}</a>
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+
+  {% for item in items %}
+    <a class="library-row" href="/content/{{ item.id }}">
+      <span>
+        <strong>{{ item.source[:110] }}{{ '…' if item.source|length > 110 }}</strong>
+        <small>Revision {{ item.revision }} · {% if item.project_slug %}<span class="tag" style="margin-right: 6px; background: #e0ede7; color: #1e6255;">Project: {{ item.project_slug }}</span>{% endif %}{{ item.created_at.strftime('%d %b %Y') }}</small>
+      </span>
+      <span>Review drafts →</span>
+    </a>
+  {% else %}
+    <p class="empty">Your first project story starts above.</p>
+  {% endfor %}
+</section>
+{% endblock %}

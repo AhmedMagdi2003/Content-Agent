@@ -4,8 +4,8 @@ import pytest
 from sqlalchemy import create_engine, select, text
 from sqlalchemy.orm import Session
 
-from content_app.db import initialize, make_engine
-from content_app.models import Content, Event, Publication, Revision, Usage, now
+from app.db import initialize, make_engine
+from app.models import Content, Event, Publication, Revision, Usage, now
 from scripts.import_legacy import import_content, import_publisher
 
 
@@ -89,7 +89,7 @@ def test_transfer_preserves_records_and_leaves_source_read_only(tmp_path):
 
 
 def test_legacy_test_posts_are_preserved_and_idempotent(tmp_path):
-    from content_app.publisher import Post, PublisherBase
+    from app.publisher import Post, PublisherBase
 
     path = tmp_path / "old-publisher.db"
     original = create_engine(f"sqlite:///{path}")
