@@ -22,7 +22,6 @@ def test_auth_csrf_and_content_only_dashboard(runtime):
         == 403
     )
     assert client.get("/content").status_code == 200
-    assert "Financial Operations" not in client.get("/content").text
     assert client.get("/operations").status_code == 200
     assert client.get("/api/v1/documents/not-owned").status_code == 404
 

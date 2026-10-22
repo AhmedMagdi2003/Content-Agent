@@ -12,6 +12,7 @@
 *.sqlite3
 *.sqlite3-*
 /data/
+/ImpactCircles_Content_Agent_Benchmark/
 /tmp/
 
 # Python environments, caches and build artifacts

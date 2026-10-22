@@ -10,7 +10,7 @@ An independent content-agent prototype that transforms research updates, project
 flowchart TD
     subgraph Ingestion["1. Source Ingestion & Grounding"]
         Brief["Research Update / Event Brief\n(/content, POST /api/v1/content)"]
-        FactExtract["Fact Extraction & Factual Guardrails\n(Source-grounded facts, zero hallucinations)"]
+        FactExtract["Source Attribution & Factual Checks\n(Reviewer-verifiable claims)"]
     end
 
     subgraph LLM["2. Multichannel AI Generation Engine"]
@@ -67,7 +67,7 @@ flowchart TD
 
 ## Key Features
 
-1. **Fact-Grounded Multichannel Drafting**:
+1. **Source-Grounded Multichannel Drafting**:
    - Transforms a single input source into three distinct, tailored drafts:
      - **LinkedIn**: Short, engaging, professional post with relevant community hashtags.
      - **Newsletter**: Concise executive briefing and progress summary for stakeholders.
@@ -76,9 +76,9 @@ flowchart TD
 2. **Project Continuity & Follow-Up Awareness**:
    - Manages weekly progress updates for ongoing research projects and tracks cumulative milestones.
    - Contextually recalls prior achievements in the research series so subsequent posts build accurately on established narrative trajectories without repeating or contradicting past accomplishments.
-3. **Block-Level Citations & Zero Hallucination**:
+3. **Block-Level Citations & Factual Review**:
    - Maps every generated assertion or block of words to its exact source quote, URL, and category (`source_brief`, `past_post`, `scraped_link`, `web_search`).
-   - Gives reviewers direct evidence and confidence to verify and trust the generated content.
+   - Gives reviewers evidence to verify generated statements; model output still requires human fact-checking.
 4. **Given Link Inspection & Web Search Retrieval**:
    - Automatically detects and scrapes clean text content from URLs provided in the source brief.
    - Executes live web searches for relevant external facts when enabled, integrating the retrieved evidence into the grounded source context.
@@ -97,6 +97,17 @@ flowchart TD
    - Sanitized timeline correlating requests, run IDs, latency (ms), model token counts, and estimated costs down to fractions of a cent ($0.10/M tokens).
 9. **Authoritative Cloud Persistence**:
    - Backed by Supabase PostgreSQL in an isolated `content_ops` schema with Row Level Security (RLS) enabled.
+
+## Product capabilities
+
+- **Flexible source input:** Submit research findings, project updates, or event notes, with optional source links for retrieval and attribution.
+- **Three channel-ready drafts:** Produce a professional LinkedIn post, a concise stakeholder newsletter summary, and a structured website article from one source brief.
+- **Traceable factual context:** Review source excerpts and citations alongside drafts. External retrieval is optional, and reviewers remain responsible for factual approval.
+- **Project continuity:** Carry forward selected project milestones into follow-up updates while keeping the source history available for review.
+- **Human editing and decisions:** Edit draft text, choose publication channels, reject with a reason, or approve the current revision. Every substantive edit creates a new digest and requires fresh approval.
+- **Approval-gated delivery:** Publish only the approved revision to selected destinations. The bundled signed publisher is a local test service; connect a separately configured destination adapter for external platforms.
+- **Publication and operations history:** Track per-channel outcomes, URLs, timestamps, retry attempts, request IDs, model usage, and estimated cost in the dashboard and API.
+- **Controlled generation:** Bound model calls, request size, execution time, and estimated job cost; use local fixtures for deterministic offline tests.
 
 ---
 
@@ -197,7 +208,7 @@ Run the full automated test suite:
 ```powershell
 uv run python -m pytest
 ```
-*Result: 29 passed (100%).*
+*Result: 29 passed in the local offline suite. External model and publishing services require separate configuration and live verification.*
 
 Run linter checks:
 ```powershell

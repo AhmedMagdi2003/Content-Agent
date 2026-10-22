@@ -125,6 +125,22 @@ def test_grounding_rejects_hallucinated_metrics_and_quotes():
         )
 
 
+def test_grounding_accepts_supported_numbers_as_digits_or_words():
+    content.check_grounding(
+        "Twenty volunteers reviewed the report.",
+        {"website": "20 volunteers reviewed the report."},
+    )
+    content.check_grounding(
+        "The sample included 1,000 entries.",
+        {"website": "The sample included 1000 entries."},
+    )
+    with pytest.raises(Conflict, match="Draft contains numbers absent from the source"):
+        content.check_grounding(
+            "Twenty volunteers reviewed the report.",
+            {"website": "21 volunteers reviewed the report."},
+        )
+
+
 def test_grounding_accepts_verified_inspected_links():
     source = "The team published their findings online."
     sources_meta = {

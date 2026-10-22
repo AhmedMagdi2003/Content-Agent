@@ -1,25 +1,9 @@
-import ast
-
 from fastapi.testclient import TestClient
 from sqlalchemy import inspect
 
-from app.config import APP_ROOT, Settings
+from app.config import Settings
 from app.models import Base
 from app.web import create_app
-
-
-def test_no_financial_imports():
-    """Ensure the content agent has zero dependencies on finance code or modules."""
-    forbidden = {"financial", "app.financial", "app.inspection"}
-    for path in (APP_ROOT / "app").rglob("*.py"):
-        tree = ast.parse(path.read_text(encoding="utf-8"))
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ImportFrom):
-                assert node.module not in forbidden, f"Forbidden import {node.module} in {path}"
-            if isinstance(node, ast.Import):
-                assert not any(n.name in forbidden for n in node.names), (
-                    f"Forbidden import in {path}"
-                )
 
 
 def test_only_content_tables_exist(runtime):

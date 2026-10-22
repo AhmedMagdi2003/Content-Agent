@@ -1,4 +1,4 @@
-"""Non-destructive transfer of legacy local content records. No finance module imports."""
+"""Non-destructive migration of supported legacy local content records."""
 
 import argparse
 import json

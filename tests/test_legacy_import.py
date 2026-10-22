@@ -10,12 +10,14 @@ from scripts.import_legacy import import_content, import_publisher
 
 
 def test_transfer_preserves_records_and_leaves_source_read_only(tmp_path):
-    source_path = tmp_path / "combined.db"
+    source_path = tmp_path / "legacy.db"
     original = make_engine(f"sqlite:///{source_path}")
     initialize(original)
     with original.begin() as connection:
-        connection.execute(text("CREATE TABLE expenses (id TEXT PRIMARY KEY, total TEXT)"))
-        connection.execute(text("INSERT INTO expenses VALUES ('keep-finance', '120.00')"))
+        connection.execute(text("CREATE TABLE unrelated_records (id TEXT PRIMARY KEY, value TEXT)"))
+        connection.execute(
+            text("INSERT INTO unrelated_records VALUES ('keep-legacy', 'preserved')")
+        )
     with Session(original) as session:
         session.add(Content(id="legacy", source="Preserved fictional update", revision=1))
         session.flush()
@@ -55,15 +57,15 @@ def test_transfer_preserves_records_and_leaves_source_read_only(tmp_path):
         )
         session.add(
             Event(
-                stage="finance",
+                stage="archive",
                 operation="confirm",
                 status="RECORDED",
-                resource_id="expense",
-                run_id="finance-run",
+                resource_id="unrelated",
+                run_id="archive-run",
                 safe_metadata={},
             )
         )
-        for operation, run in [("draft", "content-run"), ("extract", "finance-run")]:
+        for operation, run in [("draft", "content-run"), ("archive", "archive-run")]:
             session.add(Usage(run_id=run, provider="fake", model="test", operation=operation))
         session.commit()
     original.dispose()
@@ -84,7 +86,10 @@ def test_transfer_preserves_records_and_leaves_source_read_only(tmp_path):
         import_content(source_path, destination)
     assert hashlib.sha256(source_path.read_bytes()).hexdigest() == before
     with create_engine(f"sqlite:///{source_path}").connect() as connection:
-        assert connection.execute(text("SELECT total FROM expenses")).scalar() == "120.00"
+        assert (
+            connection.execute(text("SELECT value FROM unrelated_records")).scalar()
+            == "preserved"
+        )
     destination.dispose()
 
 

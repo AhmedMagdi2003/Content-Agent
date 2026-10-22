@@ -34,6 +34,17 @@ def revision_id(content_id, number):
     return f"{content_id}:{number}"
 
 
+WORD_NUMBERS = {
+    "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
+    "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
+    "ten": "10", "eleven": "11", "twelve": "12", "thirteen": "13",
+    "fourteen": "14", "fifteen": "15", "sixteen": "16", "seventeen": "17",
+    "eighteen": "18", "nineteen": "19", "twenty": "20", "thirty": "30",
+    "forty": "40", "fifty": "50", "sixty": "60", "seventy": "70",
+    "eighty": "80", "ninety": "90", "hundred": "100", "thousand": "1000",
+}
+
+
 def check_grounding(source, drafts, sources_metadata=None):
     # This catches concrete unsupported claims, not every possible semantic invention.
     # Human fact review is still mandatory before publication.
@@ -60,8 +71,18 @@ def check_grounding(source, drafts, sources_metadata=None):
             all_source_text += "\n" + (p.get("created_at", "") + " " + p.get("source", ""))
 
     source_numbers = set(re.findall(r"\d+(?:[.,]\d+)*", all_source_text))
+    source_numbers |= {n.replace(",", "") for n in source_numbers}
+    for word, digit in WORD_NUMBERS.items():
+        if re.search(r"\b" + word + r"\b", all_source_text, re.IGNORECASE):
+            source_numbers.add(digit)
+
     for draft in drafts.values():
-        if set(re.findall(r"\d+(?:[.,]\d+)*", draft)) - source_numbers:
+        draft_numbers = set(re.findall(r"\d+(?:[.,]\d+)*", draft))
+        unsupported = {
+            n for n in draft_numbers
+            if n not in source_numbers and n.replace(",", "") not in source_numbers
+        }
+        if unsupported:
             raise Conflict(
                 "Draft contains numbers absent from the source; revise the input and retry"
             )

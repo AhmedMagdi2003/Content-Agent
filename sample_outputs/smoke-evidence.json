@@ -1,6 +1,5 @@
 {
   "base_url": "http://127.0.0.1:8001",
-  "finance_running_required": false,
   "ai_inference": false,
   "publisher": "real HTTP to local test API",
   "content_id": "930e2909-b50b-4e05-8898-4ee40d3cfbe2",
