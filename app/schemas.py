@@ -1,6 +1,6 @@
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 
 CHANNELS = ("linkedin", "newsletter", "website")
 
@@ -76,3 +76,31 @@ class GenerateInput(BaseModel):
 class RejectionInput(BaseModel):
     revision: int = Field(ge=1)
     justification: str = Field(min_length=10, max_length=2000)
+
+
+class MakeClaimInput(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+    digest: str = Field(pattern=r"^[a-f0-9]{64}$")
+
+
+class MakeResultInput(MakeClaimInput):
+    attempt: int = Field(ge=1, le=3)
+    status: Literal["published", "drafted", "failed", "uncertain"]
+    external_id: str | None = Field(default=None, min_length=1, max_length=150)
+    url: HttpUrl | None = None
+    error_code: str | None = Field(default=None, pattern=r"^[A-Z0-9_:-]{1,100}$")
+
+    @model_validator(mode="after")
+    def result_fields(self):
+        successful = self.status in {"published", "drafted"}
+        if successful and not self.external_id:
+            raise ValueError("Successful results require the actual platform external_id")
+        if successful and self.error_code:
+            raise ValueError("Successful results cannot include an error_code")
+        if not successful and not self.error_code:
+            raise ValueError("Failed or uncertain results require a sanitized error_code")
+        if not successful and (self.external_id or self.url):
+            raise ValueError("Only confirmed publications can include an external_id or URL")
+        if self.url and (self.url.username or self.url.password):
+            raise ValueError("Publication URLs cannot contain credentials")
+        return self

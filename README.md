@@ -1,6 +1,11 @@
-# AI Content Generation & Automated Publishing Agent
+# Content Generation & Publishing Agent
 
-An independent content-agent prototype that transforms research updates, project announcements, and event notes into three source-grounded drafts (LinkedIn, Newsletter, and Website), tracks cryptographic revisions, enforces human approval before publishing, and demonstrates delivery through a signed local test publisher.
+This app turns project updates and research notes into drafts for LinkedIn, a newsletter, and a website. It keeps the source references and revision history with each draft. A person must review and approve a draft before it can be sent to a publishing service.
+
+For LLM testing and Make.com delivery through ngrok, see
+[Make and ngrok setup](docs/MAKE_NGROK_SETUP.md). Make receives only approved jobs
+and reports the result back to the app. The newsletter route creates a Gmail draft;
+it does not send an email. The website route remains disabled until a CMS is connected.
 
 ---
 
@@ -94,7 +99,7 @@ flowchart TD
    - Tracks per-channel status (`published`, `failed`), external IDs, live URLs, timestamps, and retry counts (`attempts: 1/3`).
    - Idempotent execution protects against duplicate posts on retry or transient network errors.
 8. **Operations & Cost Accounting Ledger**:
-   - Sanitized timeline correlating requests, run IDs, latency (ms), model token counts, and estimated costs down to fractions of a cent ($0.10/M tokens).
+   - Sanitized timeline correlating requests, run IDs, latency (ms), model token counts, and estimated costs using configured provider/model rates.
 9. **Authoritative Cloud Persistence**:
    - Backed by Supabase PostgreSQL in an isolated `content_ops` schema with Row Level Security (RLS) enabled.
 
@@ -175,19 +180,23 @@ All application settings are managed in `.env` using standard names:
 | `MAX_LLM_CALLS` | integer | `1`, `2`, `3` | `3` | Maximum automated LLM attempts permitted per generation run. |
 | `MAX_JOB_COST_USD`| decimal string | Numeric string (e.g. `0.10`) | `0.10` | Hard cost ceiling per drafting job. |
 | `MAX_INPUT_TOKENS`| integer | Number of tokens | `32000` | Maximum input token limit permitted per drafting call. |
-| `INPUT_USD_PER_MILLION` | decimal string | Rate in USD | `0.10` | Provider pricing rate per 1M input tokens for cost calculation. |
-| `OUTPUT_USD_PER_MILLION`| decimal string | Rate in USD | `0.40` | Provider pricing rate per 1M output tokens for cost calculation. |
-| `PRICING_SOURCE_URL` | string | URL string | `https://ai.google.dev/pricing` | Documented source URL for token pricing rates. |
-| `PRICING_CHECKED_AT` | string | Date string (`YYYY-MM-DD`) | `2026-10-21` | Date when token pricing was checked. |
+| `INPUT_USD_PER_MILLION` | decimal string | Rate in USD | Required; example `0.15` | Provider/model pricing rate per 1M input tokens for cost calculation. |
+| `OUTPUT_USD_PER_MILLION`| decimal string | Rate in USD | Required; example `0.60` | Provider/model pricing rate per 1M output tokens for cost calculation. |
+| `PRICING_SOURCE_URL` | string | URL string | Required | Documented source URL for the configured model's token pricing rates. |
+| `PRICING_CHECKED_AT` | string | Date string (`YYYY-MM-DD`) | Required | Date when token pricing was checked. |
 | `PUBLISHER_URL` | string | URL string | `http://127.0.0.1:8011` | Destination URL of the publishing service. |
 | `PUBLISHER_SECRET` | string | Secret string | *Required* | Shared HMAC SHA-256 secret key for signing outbound publication payloads. |
+| `PUBLISHER_BACKEND` | string | `local_test`, `make` | `local_test` | Synchronous local test service or the durable Make delivery queue. |
+| `PUBLIC_BASE_URL` | string | HTTPS origin without a path | Required for Make | Public app URL used for claim and result links. |
+| `MAKE_API_TOKEN` | secret string | Distinct random secret, at least 32 characters | Required for Make | Integration-only bearer token; cannot approve content. |
+| `MAKE_CHANNELS` | string | Comma-separated supported channels | `linkedin,website` | Channels with configured Make branches; this local Make setup enables `linkedin,newsletter` and leaves website disabled. |
 | `TRACING_BACKENDS` | string | `none`, `langfuse`, `langsmith`, `both` | `none` | External LLM observability export. Keep `none` to use internal database audit feed without cloud tracing. |
 
 ---
 
 ## Core API Endpoints Reference
 
-All endpoints under `/api/v1` require `Authorization: Bearer <REVIEWER_TOKEN>`:
+The content and operations endpoints below require `Authorization: Bearer <REVIEWER_TOKEN>`:
 
 | Method | Endpoint | Description |
 | :--- | :--- | :--- |
@@ -195,9 +204,17 @@ All endpoints under `/api/v1` require `Authorization: Bearer <REVIEWER_TOKEN>`:
 | `GET` | `/api/v1/content/{id}` | Retrieve content item, latest revision, and publication history. |
 | `PUT` | `/api/v1/content/{id}` | Update drafts or selected channels; creates a new revision and recomputes SHA-256 digest, revoking prior approval. |
 | `POST` | `/api/v1/content/{id}/reject` | Reviewer rejects the current revision with a justification reason; blocks publication. |
-| `POST` | `/api/v1/content/{id}/approve-and-publish` | Explicit human sign-off with matching revision number and digest; triggers immediate signed HTTP publication. |
+| `POST` | `/api/v1/content/{id}/approve-and-publish` | Explicit human sign-off with matching revision number and digest; publishes to the local test service or queues selected channels for Make, depending on configuration. |
 | `POST` | `/api/v1/content/{id}/retry` | Retry failed publication channels with bounded attempts and idempotency protection. |
 | `GET` | `/api/v1/operations` | Retrieve correlated operations event feed and token usage records. |
+
+Make-only routes use the separate `MAKE_API_TOKEN`, never the reviewer token:
+
+| Method | Endpoint | Description |
+| :--- | :--- | :--- |
+| `GET` | `/api/v1/integrations/make/jobs` | Fetch queued jobs for currently approved revisions. |
+| `POST` | `/api/v1/integrations/make/jobs/{publication_id}/claim` | Atomically claim one job and retrieve its exact approved text. |
+| `POST` | `/api/v1/integrations/make/jobs/{publication_id}/result` | Report the actual platform ID/URL or a sanitized failure/uncertain outcome. |
 
 ---
 
@@ -208,7 +225,7 @@ Run the full automated test suite:
 ```powershell
 uv run python -m pytest
 ```
-*Result: 29 passed in the local offline suite. External model and publishing services require separate configuration and live verification.*
+*Result: 41 passed in the local offline suite, including Make delivery, simultaneous-claim protection, and Gmail draft handling; Ruff clean. Live OpenAI generation and read-only Supabase checks passed. A real Make run published the explicitly approved LinkedIn test and created the approved Gmail draft; both were checked in their destination UIs. The user-authorized 15-minute schedule is active. Website is an intentionally disabled template, not a verified integration. See `sample_outputs/live-readiness-2026-10-23.json` and `sample_outputs/make-live-delivery-2026-10-23.json`. This is smoke-test evidence, not production certification.*
 
 Run linter checks:
 ```powershell

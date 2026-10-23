@@ -1,0 +1,13 @@
+01. We follow one project from research and review to publication, then show how week two builds on week one.
+02. The agent combines supplied context with linked evidence, so reviewers can check the sources behind each draft.
+03. It prepares channel-ready drafts for LinkedIn, the newsletter, and the future website.
+04. For Arid Sun week one, I select the project, set its reporting dates, and add source notes. The agent generates channel drafts for review.
+05. A human reviews the copy and citations, can make edits, and approves the exact revision before anything is queued for delivery.
+06. For this demo, I manually pressed Run once instead of waiting for the fifteen-minute schedule. LinkedIn publishes after approval; Gmail gets a review draft, never an auto-sent email.
+07. The first-week update is live on LinkedIn, with its own public post link.
+08. For week two, I use the same project with a new reporting window and fresh notes.
+09. The agent checks prior published work. The week-one post appears in the week-two context, helping the new update continue the story rather than repeat it.
+10. I manually run the scenario again for this test.
+11. The activity confirms LinkedIn delivery, while the newsletter stays an unsent Gmail draft. The app keeps the delivery history. Website publishing waits for a CMS connection; its Make route is disabled.
+12. Here is the published week-two LinkedIn update.
+13. Both weeks remain together in the content library.

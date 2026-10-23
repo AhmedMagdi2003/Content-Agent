@@ -1,0 +1,439 @@
+{
+  "name": "content agent",
+  "flow": [
+    {
+      "id": 1,
+      "module": "http:MakeRequest",
+      "version": 4,
+      "parameters": {
+        "authenticationType": "apiKeyConnection",
+        "tlsType": ""
+      },
+      "mapper": {
+        "url": "https://YOUR-ASSIGNED-DOMAIN.ngrok-free.app/api/v1/integrations/make/jobs?limit=20",
+        "method": "get",
+        "headers": [
+          {
+            "name": "ngrok-skip-browser-warning",
+            "value": "true"
+          }
+        ],
+        "parseResponse": true,
+        "stopOnHttpError": true,
+        "timeout": "40",
+        "allowRedirects": true,
+        "shareCookies": false,
+        "requestCompressedContent": true
+      },
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 2,
+      "module": "builtin:BasicFeeder",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "array": "{{1.data.jobs}}"
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0
+        }
+      }
+    },
+    {
+      "id": 6,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "filter": {
+        "name": "Approved channel present",
+        "conditions": [
+          [
+            {
+              "a": "{{2.channel}}",
+              "o": "exist"
+            }
+          ]
+        ]
+      },
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        }
+      },
+      "routes": [
+        {
+          "flow": [
+            {
+              "id": 3,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "apiKeyConnection",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "{{2.claim_url}}",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "ngrok-skip-browser-warning",
+                    "value": "true"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"digest\":\"{{2.digest}}\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": -150,
+                  "name": "Claim approved LinkedIn post"
+                }
+              },
+              "filter": {
+                "name": "LinkedIn jobs only",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.channel}}",
+                      "o": "text:equal",
+                      "b": "linkedin"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 4,
+              "module": "linkedin:CreatePost",
+              "version": 2,
+              "parameters": {},
+              "mapper": {
+                "content": "{{3.data.text}}",
+                "visibility": "PUBLIC",
+                "feedDistribution": "MAIN_FEED",
+                "isReshareDisabledByAuthor": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": 0
+                }
+              }
+            },
+            {
+              "id": 5,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "apiKeyConnection",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "{{2.result_url}}",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "ngrok-skip-browser-warning",
+                    "value": "true"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"digest\":\"{{3.data.digest}}\",\"attempt\":{{3.data.attempt}},\"status\":\"published\",\"external_id\":\"{{4.id}}\",\"url\":\"https://www.linkedin.com/feed/update/{{4.id}}/\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 0,
+                  "name": "Report LinkedIn post URL"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 8,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "apiKeyConnection",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "{{2.claim_url}}",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "ngrok-skip-browser-warning",
+                    "value": "true"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"digest\":\"{{2.digest}}\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": 300,
+                  "name": "Claim approved newsletter"
+                }
+              },
+              "filter": {
+                "name": "Newsletter jobs only",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.channel}}",
+                      "o": "text:equal",
+                      "b": "newsletter"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 7,
+              "module": "google-email:createADraft",
+              "version": 4,
+              "parameters": {},
+              "mapper": {
+                "to": [
+                  "reviewer@example.com"
+                ],
+                "subject": "Newsletter draft for review",
+                "bodyType": "collection",
+                "contents": [
+                  {
+                    "text": "<pre style=\"white-space:pre-wrap;font-family:Arial,sans-serif\">{{escapeHTML(8.data.text)}}</pre>",
+                    "image": {}
+                  }
+                ]
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": 300,
+                  "name": "Newsletter — draft only"
+                }
+              }
+            },
+            {
+              "id": 9,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "apiKeyConnection",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "{{2.result_url}}",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "ngrok-skip-browser-warning",
+                    "value": "true"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"digest\":\"{{8.data.digest}}\",\"attempt\":{{8.data.attempt}},\"status\":\"drafted\",\"external_id\":\"{{7.draftId}}\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 300,
+                  "name": "Report Gmail draft — not sent"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 10,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "apiKeyConnection",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "{{2.claim_url}}",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "ngrok-skip-browser-warning",
+                    "value": "true"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"digest\":\"{{2.digest}}\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 900,
+                  "y": 600,
+                  "name": "Website claim — disabled template"
+                }
+              },
+              "filter": {
+                "name": "WEBSITE DISABLED — configure CMS first",
+                "conditions": [
+                  [
+                    {
+                      "a": "{{2.channel}}",
+                      "o": "text:equal",
+                      "b": "website"
+                    },
+                    {
+                      "a": "DISABLED",
+                      "o": "text:equal",
+                      "b": "ENABLED"
+                    }
+                  ]
+                ]
+              }
+            },
+            {
+              "id": 11,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "noAuth",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "https://configure-your-cms.example.invalid/api/posts",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "Idempotency-Key",
+                    "value": "{{10.data.idempotency_key}}"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"external_key\":\"{{10.data.idempotency_key}}\",\"channel\":\"website\",\"text\":\"{{escapeJSON(10.data.text)}}\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1200,
+                  "y": 600,
+                  "name": "Website CMS — replace endpoint and connect auth"
+                }
+              }
+            },
+            {
+              "id": 12,
+              "module": "http:MakeRequest",
+              "version": 4,
+              "parameters": {
+                "authenticationType": "apiKeyConnection",
+                "tlsType": ""
+              },
+              "mapper": {
+                "url": "{{2.result_url}}",
+                "method": "post",
+                "headers": [
+                  {
+                    "name": "ngrok-skip-browser-warning",
+                    "value": "true"
+                  }
+                ],
+                "contentType": "json",
+                "inputMethod": "jsonString",
+                "jsonStringBodyContent": "{\"digest\":\"{{10.data.digest}}\",\"attempt\":{{10.data.attempt}},\"status\":\"published\",\"external_id\":\"{{escapeJSON(11.data.external_id)}}\",\"url\":\"{{escapeJSON(11.data.url)}}\"}",
+                "parseResponse": true,
+                "stopOnHttpError": true,
+                "timeout": "40",
+                "allowRedirects": true,
+                "shareCookies": false,
+                "requestCompressedContent": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 600,
+                  "name": "Report real website URL"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "instant": false,
+    "version": 1,
+    "scenario": {
+      "roundtrips": 1,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "autoCommitTriggerLast": true,
+      "sequential": true,
+      "slots": null,
+      "confidential": false,
+      "dataloss": false,
+      "dlq": false,
+      "freshVariables": false
+    },
+    "designer": {
+      "orphans": []
+    },
+    "zone": "eu1.make.com",
+    "notes": []
+  }
+}

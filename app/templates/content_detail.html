@@ -17,9 +17,9 @@
 <section class="panel" style="border-left: 4px solid var(--teal); background: #f8faf8;">
   <div style="display: flex; justify-content: space-between; align-items: flex-start;">
     <div>
-      <p class="eyebrow" style="margin-bottom: 4px;">PROJECT CONTINUITY & PAST ACHIEVEMENTS</p>
+      <p class="eyebrow" style="margin-bottom: 4px;">PROJECT SERIES & PUBLISHED HISTORY</p>
       <h2 style="margin: 0 0 6px 0;">Research Series: {{ item.project_slug }}</h2>
-      <p style="margin: 0; color: var(--muted); font-size: 13px;">This update maintains narrative awareness of {{ project_updates|length }} weekly update(s) in this research stream.</p>
+      <p style="margin: 0; color: var(--muted); font-size: 13px;">{{ project_updates|length }} submitted update(s) are in this series. Follow-up generation uses publicly published posts as continuity context.</p>
     </div>
     <span class="tag" style="background: #eef2ed;">{{ milestones|length }} Milestones Tracked</span>
   </div>
@@ -39,13 +39,13 @@
 
   {% if project_updates|length > 1 %}
     <details style="margin-top: 10px; font-size: 13px;">
-      <summary style="cursor: pointer; color: var(--teal); font-weight: 600;">View previous posts in this project ({{ project_updates|length - 1 }})</summary>
+      <summary style="cursor: pointer; color: var(--teal); font-weight: 600;">View other submitted updates in this project ({{ project_updates|length - 1 }})</summary>
       <div style="margin-top: 8px; display: flex; flex-direction: column; gap: 6px;">
         {% for pu in project_updates %}
           {% if pu.id != item.id %}
             <div style="padding: 8px 10px; background: white; border-radius: 4px; border: 1px solid var(--line); display: flex; justify-content: space-between;">
               <span><strong>{{ pu.source[:80] }}…</strong> <small style="color: var(--muted);">({{ pu.created_at.strftime('%d %b %Y') }})</small></span>
-              <a href="/content/{{ pu.id }}" style="font-size: 12px;">View post →</a>
+              <a href="/content/{{ pu.id }}" style="font-size: 12px;">View submitted update →</a>
             </div>
           {% endif %}
         {% endfor %}
@@ -61,7 +61,7 @@
 
   {% if sources_context and (sources_context.given_links or sources_context.web_search) %}
     <div style="margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line);">
-      <strong style="font-size: 12px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px;">Inspected Sources & Verified Evidence:</strong>
+      <strong style="font-size: 12px; text-transform: uppercase; color: var(--muted); display: block; margin-bottom: 8px;">Inspected Sources & Supporting Context:</strong>
       <div style="display: flex; flex-direction: column; gap: 8px;">
         {% for link in sources_context.given_links %}
           <div style="padding: 8px 12px; background: #f6f8f6; border-radius: 6px; border: 1px solid #e2eae3; font-size: 13px;">
@@ -91,9 +91,9 @@
   <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
     <div>
       <h2 style="margin: 0;">Factual Citations & Source Evidence</h2>
-      <p style="margin: 2px 0 0 0; color: var(--muted); font-size: 13px;">Zero hallucination guarantee: every block of words is anchored to verified source text below.</p>
+      <p style="margin: 2px 0 0 0; color: var(--muted); font-size: 13px;">Compare each citation with its supporting source text. Automated checks catch some unsupported numbers, links, and quotations; human fact-checking is required.</p>
     </div>
-    <span class="tag" style="background: #e2f2e7; color: #1e6255; font-weight: 600;">✓ Grounded & Verified</span>
+    <span class="tag" style="background: #e2f2e7; color: #1e6255; font-weight: 600;">Source evidence</span>
   </div>
 
   {% if citations %}
@@ -122,7 +122,7 @@
       {% endfor %}
     </div>
   {% else %}
-    <p style="color: var(--muted); margin: 0; font-size: 13px;">No explicit citation blocks recorded for this revision.</p>
+    <p style="color: var(--muted); margin: 0; font-size: 13px;">No citation blocks are recorded for this revision. Check every factual claim against the source before approval.</p>
   {% endif %}
 </section>
 
@@ -145,7 +145,12 @@
     <div>
       <h2>Your approval is the final step.</h2>
       <p>Save any edits first. Approval covers this exact revision and the selected channels.</p>
+      {% if publisher_backend == 'make' %}
+      <small>Make delivery · enabled channels: {{ make_channels }}. Approval queues a job;
+        publication is confirmed only after Make reports the platform result.</small>
+      {% else %}
       <small>Local mock CMS / social API · no organizational accounts connected.</small>
+      {% endif %}
     </div>
     <div class="actions">
       <button type="submit" class="secondary">Save new revision</button>
@@ -176,6 +181,11 @@
 
 <section class="panel">
   <h2>Publication log</h2>
+  {% if publisher_backend == 'make' %}
+  <p>Queued jobs wait for the Make scenario. Publishing jobs are being processed; editing
+    is paused until their result arrives. A drafted newsletter is saved in Gmail for
+    review and has not been sent. Refresh this page to see the latest result.</p>
+  {% endif %}
   <div class="table-wrap">
     <table>
       <thead>
@@ -196,7 +206,7 @@
             </td>
             <td>{{ p.attempts }}/3</td>
             <td>{{ p.published_at or '—' }}</td>
-            <td>{% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">View published post ↗</a>{% else %}{{ p.error or 'Pending' }}{% endif %}</td>
+            <td>{% if p.url %}<a href="{{ p.url }}" target="_blank" rel="noopener">View published post ↗</a>{% elif p.error %}{{ p.error }}{% elif p.external_id %}{{ p.external_id }}{% else %}{{ {'queued': 'Waiting for Make', 'publishing': 'Waiting for platform result', 'cancelled': 'Approval changed'}.get(p.status, 'Pending') }}{% endif %}</td>
           </tr>
         {% else %}
           <tr>

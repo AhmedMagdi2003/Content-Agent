@@ -1,0 +1,46 @@
+{
+  "verified_at": "2026-10-23",
+  "scenario_url": "https://eu1.make.com/3297184/scenarios/8126448/edit",
+  "schedule": "Active, every 15 minutes; explicitly authorized by the user",
+  "backend": "make",
+  "enabled_channels": ["linkedin", "newsletter"],
+  "linkedin": {
+    "content_id": "19bf1feb-d21e-40fb-a21e-bdcc50700380",
+    "revision": 2,
+    "status": "published",
+    "attempts": 1,
+    "external_id": "urn:li:share:7519183263068848128",
+    "url": "https://www.linkedin.com/feed/update/urn:li:share:7519183263068848128/",
+    "published_at": "2026-10-22T23:49:50.052224+00:00",
+    "verified": "Exact human-approved text visible on LinkedIn; actual platform ID and callback recorded"
+  },
+  "newsletter": {
+    "content_id": "73eb4dbc-8a67-4c8f-89fc-4e94a14eac64",
+    "revision": 2,
+    "status": "drafted",
+    "attempts": 1,
+    "external_id": "r172648118461050106",
+    "published_at": null,
+    "subject": "Newsletter draft for review",
+    "sent": false,
+    "verified": "Exact human-approved text visible in connected Gmail account Drafts; actual Draft ID and callback recorded"
+  },
+  "website": {
+    "status": "disabled_template",
+    "verified": false,
+    "guards": ["Excluded from MAKE_CHANNELS", "Make route has a deliberately false filter condition"],
+    "required": "A real CMS endpoint/module, its own authentication, correct response mappings, and a staging test"
+  },
+  "verification": {
+    "offline_tests": "41 passed",
+    "ruff": "All checks passed",
+    "scope": "Connectivity and delivery smoke test, not production certification or a complete assignment assessment"
+  },
+  "limitations": [
+    "Requires the local app, computer, and ngrok to remain running",
+    "Only LinkedIn personal text posting and Gmail review drafts were tested",
+    "Gmail drafts are self-addressed for review; no mailing-list or sending integration",
+    "Platform errors stop the scenario; claimed jobs need manual reconciliation if a callback is missing",
+    "Website route is not a connected or tested CMS integration"
+  ]
+}

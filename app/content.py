@@ -34,6 +34,13 @@ def revision_id(content_id, number):
     return f"{content_id}:{number}"
 
 
+def publication_channels(settings):
+    if settings.publisher_backend == "make":
+        enabled = {value.strip() for value in settings.make_channels.split(",")}
+        return [channel for channel in CHANNELS if channel in enabled]
+    return list(CHANNELS)
+
+
 WORD_NUMBERS = {
     "zero": "0", "one": "1", "two": "2", "three": "3", "four": "4",
     "five": "5", "six": "6", "seven": "7", "eight": "8", "nine": "9",
@@ -118,17 +125,43 @@ def generate(
     # 1. Project Memory & Past Milestones retrieval
     past_posts, past_milestones = [], []
     if project_slug:
-        prior_items = session.scalars(
-            select(Content)
-            .where(Content.project_slug == project_slug)
-            .order_by(Content.created_at.asc())
+        # Unapproved or draft-only benchmark entries are not publication history.
+        # Build continuity exclusively from the current, human-approved revision
+        # and an actual public platform publication receipt.
+        published = session.execute(
+            select(Content, Revision, Publication)
+            .join(Revision, Revision.content_id == Content.id)
+            .join(Publication, Publication.revision_id == Revision.id)
+            .where(
+                Content.project_slug == project_slug,
+                Revision.number == Content.revision,
+                Revision.decision == "approved",
+                Revision.approved_at.is_not(None),
+                Publication.status == "published",
+                Publication.published_at.is_not(None),
+            )
+            .order_by(Publication.published_at.asc())
         ).all()
-        for p in prior_items:
-            past_posts.append({
+        posts_by_item = {}
+        for p, prior_revision, publication in published:
+            post = posts_by_item.setdefault(p.id, {
                 "id": p.id,
-                "created_at": p.created_at.strftime("%Y-%m-%d"),
-                "source": p.source,
+                "created_at": publication.published_at.strftime("%Y-%m-%d"),
+                "source": prior_revision.drafts.get(publication.channel, p.source),
+                "url": publication.url,
             })
+            # Prefer the actual public LinkedIn copy if the same revision also
+            # has a website publication or a non-public newsletter draft.
+            if publication.channel == "linkedin":
+                post["source"], post["url"] = (
+                    prior_revision.drafts["linkedin"], publication.url
+                )
+        past_posts.extend(posts_by_item.values())
+        milestone_items = set()
+        for p, _, _ in published:
+            if p.id in milestone_items:
+                continue
+            milestone_items.add(p.id)
             if p.sources_context and "achievements" in p.sources_context:
                 past_milestones.extend(p.sources_context["achievements"])
 
@@ -195,14 +228,15 @@ def generate(
         session.add(item)
         session.flush()
         citations = state.get("citations", [])
+        channels = publication_channels(settings)
         session.add(
             Revision(
                 id=revision_id(item.id, 1),
                 content_id=item.id,
                 number=1,
                 drafts=channel_drafts,
-                channels=list(CHANNELS),
-                digest=revision_hash(channel_drafts, CHANNELS),
+                channels=channels,
+                digest=revision_hash(channel_drafts, channels),
                 citations=citations,
             )
         )
@@ -259,7 +293,14 @@ def revise(session, content_id, expected, drafts, channels, actor):
     item = session.scalar(select(Content).where(Content.id == content_id).with_for_update())
     if not item or item.revision != expected:
         raise Conflict("Stale content revision; reload before editing")
+    from app.make_delivery import guard_edit, invalidate_queued
+
+    guard_edit(session, content_id)
     old = session.get(Revision, revision_id(content_id, expected))
+    data = drafts.model_dump()
+    # Human edits are still untrusted claims. Apply the same deterministic
+    # unsupported-number, URL and quotation checks used for generated drafts.
+    check_grounding(item.source, data, item.sources_context)
     result = session.execute(
         update(Content)
         .where(Content.id == content_id, Content.revision == expected)
@@ -271,7 +312,7 @@ def revise(session, content_id, expected, drafts, channels, actor):
     old.approved_at = old.approved_by = None
     if old.decision == "approved":
         old.decision = "invalidated"
-    data = drafts.model_dump()
+    invalidate_queued(session, old.id)
     revision = Revision(
         id=revision_id(content_id, expected + 1),
         content_id=content_id,
@@ -279,7 +320,9 @@ def revise(session, content_id, expected, drafts, channels, actor):
         drafts=data,
         channels=sorted(channels),
         digest=revision_hash(data, channels),
-        citations=old.citations if old else [],
+        # Citations identify exact claims from the prior revision and must never
+        # be shown as evidence for text the reviewer has changed.
+        citations=[],
     )
     session.add(revision)
     emit(
@@ -294,6 +337,9 @@ def regenerate(session, settings, content_id, expected, actor):
     item = session.scalar(select(Content).where(Content.id == content_id).with_for_update())
     if not item or item.revision != expected:
         raise Conflict("Stale content revision; reload before generating")
+    from app.make_delivery import guard_edit, invalidate_queued
+
+    guard_edit(session, content_id)
     previous = session.get(Revision, revision_id(content_id, expected))
     run_id = uid()
     provider = provider_for(settings, session, run_id)
@@ -321,13 +367,14 @@ def regenerate(session, settings, content_id, expected, actor):
     previous.approved_at = previous.approved_by = None
     if previous.decision == "approved":
         previous.decision = "invalidated"
+    invalidate_queued(session, previous.id)
     revision = Revision(
         id=revision_id(content_id, expected + 1),
         content_id=content_id,
         number=expected + 1,
         drafts=channel_drafts,
-        channels=list(CHANNELS),
-        digest=revision_hash(channel_drafts, CHANNELS),
+        channels=publication_channels(settings),
+        digest=revision_hash(channel_drafts, publication_channels(settings)),
         citations=citations,
     )
     session.add(revision)
@@ -410,6 +457,12 @@ def approve_publish(
     revision = session.get(Revision, revision_id(content_id, expected))
     if not revision.approved_at or revision.digest != digest:
         raise Conflict("Approval invalidated")
+    if settings.publisher_backend == "make" and publisher is None:
+        from app.make_delivery import enqueue
+
+        results = enqueue(session, settings, revision)
+        session.commit()
+        return results
     publisher = publisher or Publisher(settings)
     results = []
     for channel in revision.channels:
@@ -422,7 +475,11 @@ def approve_publish(
             session.add(publication)
             session.flush()
         results.append(publication)
-        if publication.status == "published" or publication.attempts >= 3:
+        if publication.destination.startswith("make:") and publication.status in {
+            "queued", "publishing", "uncertain"
+        }:
+            raise Conflict("Resolve the outstanding Make job before switching publishers")
+        if publication.status in {"published", "drafted"} or publication.attempts >= 3:
             continue
         if publication.status == "uncertain":
             reconcile = getattr(publisher, "reconcile", None)

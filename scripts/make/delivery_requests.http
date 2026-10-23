@@ -1,0 +1,49 @@
+# Request examples for the Make scenario. This is NOT an importable Make blueprint.
+# Use only a destination you are authorized to publish to.
+@baseUrl = https://YOUR-ASSIGNED-DOMAIN.ngrok-free.app
+@makeToken = COPY_THE_PRIVATE_MAKE_API_TOKEN_HERE
+@publicationId = CONTENT_ID:REVISION:CHANNEL
+@digest = COPY_THE_64_CHARACTER_DIGEST_HERE
+
+### Fetch approved jobs (this never approves content)
+GET {{baseUrl}}/api/v1/integrations/make/jobs?limit=20
+Authorization: Bearer {{makeToken}}
+ngrok-skip-browser-warning: true
+
+### Claim immediately before posting; stop on any non-2xx response
+POST {{baseUrl}}/api/v1/integrations/make/jobs/{{publicationId}}/claim
+Authorization: Bearer {{makeToken}}
+ngrok-skip-browser-warning: true
+Content-Type: application/json
+
+{"digest":"{{digest}}"}
+
+### Report confirmed platform success (map attempt from the claim response)
+POST {{baseUrl}}/api/v1/integrations/make/jobs/{{publicationId}}/result
+Authorization: Bearer {{makeToken}}
+ngrok-skip-browser-warning: true
+Content-Type: application/json
+
+{
+  "digest": "{{digest}}",
+  "attempt": 1,
+  "status": "published",
+  "external_id": "ACTUAL_PLATFORM_POST_ID",
+  "url": "https://ACTUAL_PLATFORM_PUBLICATION_URL"
+}
+
+### Report a definite failure: no platform post was created
+POST {{baseUrl}}/api/v1/integrations/make/jobs/{{publicationId}}/result
+Authorization: Bearer {{makeToken}}
+ngrok-skip-browser-warning: true
+Content-Type: application/json
+
+{"digest":"{{digest}}","attempt":1,"status":"failed","error_code":"PLATFORM_401"}
+
+### Report an uncertain outcome; never blindly repeat the platform write
+POST {{baseUrl}}/api/v1/integrations/make/jobs/{{publicationId}}/result
+Authorization: Bearer {{makeToken}}
+ngrok-skip-browser-warning: true
+Content-Type: application/json
+
+{"digest":"{{digest}}","attempt":1,"status":"uncertain","error_code":"PLATFORM_TIMEOUT"}

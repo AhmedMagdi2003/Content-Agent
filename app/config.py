@@ -2,6 +2,7 @@
 
 from pathlib import Path
 from typing import Literal
+from urllib.parse import urlsplit
 
 from pydantic import AliasChoices, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -10,7 +11,9 @@ APP_ROOT = Path(__file__).resolve().parents[1]
 
 
 class Settings(BaseSettings):
-    model_config = SettingsConfigDict(env_file=APP_ROOT / ".env", extra="ignore")
+    model_config = SettingsConfigDict(
+        env_file=(APP_ROOT / ".env", APP_ROOT / ".env.make"), extra="ignore"
+    )
 
     mode: Literal["cloud", "demo"] = Field(
         default="cloud", validation_alias=AliasChoices("MODE", "CONTENT_MODE")
@@ -95,6 +98,10 @@ class Settings(BaseSettings):
         default=SecretStr(""),
         validation_alias=AliasChoices("PUBLISHER_SECRET", "CONTENT_PUBLISHER_SECRET"),
     )
+    publisher_backend: Literal["local_test", "make"] = "local_test"
+    public_base_url: str = ""
+    make_api_token: SecretStr = SecretStr("")
+    make_channels: str = "linkedin,website"
     tracing_backends: Literal["none", "langfuse", "langsmith", "both"] = Field(
         default="none",
         validation_alias=AliasChoices("TRACING_BACKENDS", "CONTENT_TRACING_BACKENDS"),
@@ -110,6 +117,18 @@ class Settings(BaseSettings):
             raise ValueError("max_llm_calls must be 1..3")
         if not self.local_data_dir.is_absolute():
             self.local_data_dir = APP_ROOT / self.local_data_dir
+        if self.public_base_url:
+            parsed = urlsplit(self.public_base_url)
+            if (
+                parsed.scheme != "https" or not parsed.hostname or parsed.username
+                or parsed.password or parsed.query or parsed.fragment
+                or parsed.path not in ("", "/")
+            ):
+                raise ValueError("PUBLIC_BASE_URL must be an HTTPS origin without a path")
+            self.public_base_url = self.public_base_url.rstrip("/")
+        channels = [value.strip() for value in self.make_channels.split(",")]
+        if not channels or any(c not in {"linkedin", "website", "newsletter"} for c in channels):
+            raise ValueError("MAKE_CHANNELS must contain supported comma-separated channels")
         return self
 
     def require_runtime(self):
@@ -121,3 +140,11 @@ class Settings(BaseSettings):
             "postgresql+psycopg://"
         ):
             raise RuntimeError("Cloud mode requires Supabase PostgreSQL")
+        if self.publisher_backend == "make":
+            if not self.public_base_url or not self.secure_cookies:
+                raise RuntimeError("Make requires PUBLIC_BASE_URL and SECURE_COOKIES=true")
+            token = self.make_api_token.get_secret_value()
+            if len(token) < 32 or token in {
+                self.reviewer_token.get_secret_value(), self.session_secret.get_secret_value()
+            }:
+                raise RuntimeError("Configure a distinct MAKE_API_TOKEN (at least 32 characters)")

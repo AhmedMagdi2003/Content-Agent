@@ -81,7 +81,7 @@ async function publish(retry) {
   if (dirty) { notice('Save your edits as a new revision before approving or retrying.', true); return; }
   const buttons = draftForm.querySelectorAll('button'); buttons.forEach(b => b.disabled = true);
   try {
-    notice('Sending the approved revision to the selected test destinations…');
+    notice('Preparing delivery of the approved revision to the selected destinations…');
     const result = await api(`/api/v1/content/${draftForm.dataset.id}/${retry ? 'retry' : 'approve-and-publish'}`, 'POST', {
       revision: Number(draftForm.dataset.revision), digest: draftForm.dataset.digest,
     });

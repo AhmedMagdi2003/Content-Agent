@@ -17,7 +17,7 @@ from sqlalchemy import or_, select, text
 from sqlalchemy.orm import Session, sessionmaker
 from starlette.middleware.sessions import SessionMiddleware
 
-from app import content
+from app import content, make_delivery
 from app.ai import ProviderError
 from app.config import Settings
 from app.db import initialize, make_engine, query_metrics
@@ -36,6 +36,8 @@ from app.schemas import (
     ApprovalInput,
     ContentInput,
     GenerateInput,
+    MakeClaimInput,
+    MakeResultInput,
     RejectionInput,
     RevisionInput,
 )
@@ -108,6 +110,18 @@ def create_app(settings=None, engine=None):
 
     DB = Annotated[Session, Depends(db)]
     Actor = Annotated[str, Depends(authenticated)]
+
+    def make_authenticated(request: Request):
+        if cfg.publisher_backend != "make":
+            raise HTTPException(503, "Make delivery is not enabled")
+        expected = cfg.make_api_token.get_secret_value()
+        if len(expected) < 32:
+            raise HTTPException(503, "Make authentication is not configured")
+        if not hmac.compare_digest(request.headers.get("authorization", ""), f"Bearer {expected}"):
+            raise HTTPException(401, "Invalid Make API token")
+        return "make"
+
+    MakeActor = Annotated[str, Depends(make_authenticated)]
 
     @application.middleware("http")
     async def activity(request: Request, call_next):
@@ -221,6 +235,8 @@ def create_app(settings=None, engine=None):
             provider=cfg.provider,
             csrf=request.session.get("csrf", ""),
             path=request.url.path,
+            publisher_backend=cfg.publisher_backend,
+            make_channels=cfg.make_channels,
         )
         return templates.TemplateResponse(request, template, context)
 
@@ -328,6 +344,20 @@ def create_app(settings=None, engine=None):
             given_links=body.given_links,
         )
         return record(item)
+
+    @application.get("/api/v1/integrations/make/jobs")
+    def make_jobs(session: DB, actor: MakeActor, limit: int = 20):
+        if not 1 <= limit <= 100:
+            raise HTTPException(422, "limit must be between 1 and 100")
+        return {"jobs": make_delivery.jobs(session, cfg, limit)}
+
+    @application.post("/api/v1/integrations/make/jobs/{publication_id}/claim")
+    def make_claim(publication_id: str, body: MakeClaimInput, session: DB, actor: MakeActor):
+        return make_delivery.claim(session, cfg, publication_id, body.digest)
+
+    @application.post("/api/v1/integrations/make/jobs/{publication_id}/result")
+    def make_result(publication_id: str, body: MakeResultInput, session: DB, actor: MakeActor):
+        return record(make_delivery.complete(session, publication_id, body))
 
     @application.get("/api/v1/projects")
     def list_projects(session: DB, actor: Actor):

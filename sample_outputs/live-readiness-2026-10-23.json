@@ -1,0 +1,33 @@
+{
+  "date": "2026-10-23",
+  "provider": "openai",
+  "model": "gpt-4o-mini",
+  "live_model_test": {
+    "status": "passed",
+    "source_kind": "fictional research checklist update",
+    "generated_channels": ["linkedin", "newsletter", "website"],
+    "citation_count": 4,
+    "input_tokens": 652,
+    "output_tokens": 457,
+    "estimated_usd": "0.00037200",
+    "input_usd_per_million": "0.15",
+    "output_usd_per_million": "0.60",
+    "pricing_source": "https://developers.openai.com/api/docs/models/gpt-4o-mini",
+    "elapsed_seconds": 6.41,
+    "draft_storage": "isolated in-memory test database",
+    "publication_attempted": false,
+    "limitation": "One connectivity/structured-output smoke test; not a full editorial benchmark."
+  },
+  "supabase_read_only_probe": {
+    "status": "passed",
+    "schema": "content_ops",
+    "tables": [
+      "content_items", "content_revisions", "events", "llm_usage",
+      "publication_attempts", "publications"
+    ],
+    "database_write_performed": false
+  },
+  "ngrok_public_url_verified": false,
+  "make_account_scenario_verified": false,
+  "real_platform_posting_verified": false
+}
