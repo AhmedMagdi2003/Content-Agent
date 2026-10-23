@@ -15,6 +15,7 @@
 /data/
 /ImpactCircles_Content_Agent_Benchmark/
 /tmp/
+/deliverables/
 
 # Python environments, caches and build artifacts
 .venv/

@@ -86,7 +86,9 @@ for ($i = 0; $i -lt $scenes.Count; $i++) {
     $hold = if ($scene.Hold) { [double]$scene.Hold } else { 0.0 }
     $slot = [double]$scene.End - [double]$scene.Start + $hold
     $wav = Join-Path $work ('voice-{0:D2}-fixed.wav' -f ($i + 1))
-    if (-not (Test-Path -LiteralPath $wav -PathType Leaf)) { throw "Narration audio is missing: $wav. Run scripts/generate_walkthrough_voiceover.py first." }
+    if (-not (Test-Path -LiteralPath $wav -PathType Leaf)) {
+        throw "Narration audio is missing: $wav. Run 'uv run python -m scripts.generate_walkthrough_voiceover' from the repository root first."
+    }
     $voiceDuration = Get-WavDuration $wav
     $tempo = [Math]::Max(1.0, $voiceDuration / ($slot - 0.4))
     if ($tempo -gt 1.25) { throw ("Narration scene {0} is too long ({1:N1}s for {2:N1}s). Shorten the narration before rendering." -f ($i + 1), $voiceDuration, $slot) }
